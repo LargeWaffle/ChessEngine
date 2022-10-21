@@ -1,10 +1,12 @@
 import chesslib.Board;
+import chesslib.move.*;
 
 import java.util.*;
 
 import static chesslib.Side.*;
 
 public class UCI {
+    static String actualFen = "";
     static String ENGINENAME="Tomart1";
     public static void uciCommunication() {
         Scanner input = new Scanner(System.in);
@@ -73,25 +75,17 @@ public class UCI {
         }
         if (input.contains("moves")) {
             input=input.substring(input.indexOf("moves")+6);
-            while (input.length()>0)
-            {
-                board.legalMoves();
-                /*
-                for (Move move : board.legalMoves()) {
-                    board.doMove(move);
-                    //do something
-                    board.undoMove();
-                }
-                 */
-                input=input.substring(input.indexOf(' ')+1);
-            }
+            MoveList list = new MoveList();
+            list.loadFromSan(input);
+            System.out.println("FEN of final position: " + list.getFen());
+            actualFen = list.getFen();
         }
     }
     public static void inputGo() {
         Board board = new Board(); // TO REMOVE
-        board.legalMoves();
-        int index=(int)(Math.floor(Math.random()*(board.legalMoves().toArray().length/4))*4);
-        System.out.println("bestmove "+ board.legalMoves().get(index));
+        board.loadFromFen(actualFen);
+        List<Move> moves = board.legalMoves();
+        System.out.println("bestmove "+ moves.get(0));
     }
 
     public static void inputQuit() {
