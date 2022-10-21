@@ -9,5 +9,6 @@ public class Main {
         Board board = new Board();
         List<Move> moves = board.legalMoves();
         System.out.println("Legal moves: " + moves);
+        System.out.println("Legal moves: " + board.getSideToMove());
     }
 }
