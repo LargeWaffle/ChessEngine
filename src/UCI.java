@@ -1,8 +1,9 @@
+import algorithms.Minimax;
 import chesslib.Board;
 import chesslib.move.*;
 
 import java.util.*;
-
+import algorithms.Minimax.*;
 import static chesslib.Side.*;
 
 public class UCI {
@@ -84,8 +85,11 @@ public class UCI {
     public static void inputGo() {
         Board board = new Board(); // TO REMOVE
         board.loadFromFen(actualFen);
-        List<Move> moves = board.legalMoves();
-        System.out.println("bestmove "+ moves.get(0));
+
+        Minimax algo = new Minimax(actualFen, 2);
+        Move bestMove = algo.bestMove;
+
+        System.out.println("bestmove "+ bestMove);
     }
 
     public static void inputQuit() {
