@@ -21,10 +21,8 @@ public class Node {
         nodeMove = mv;
         fen = fenstring;
         board.loadFromFen(fen);
-
-        score = getFenScore();
-
         children = new ArrayList<>();
+        score = getFenScore();
     }
 
     public void generateChildren(){

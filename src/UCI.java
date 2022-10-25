@@ -66,7 +66,7 @@ public class UCI {
         input=input.substring(9).concat(" ");
         if (input.contains("startpos ")) {
             input=input.substring(9);
-            board.loadFromFen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
+            actualFen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
         }
         else if (input.contains("fen")) {
             input=input.substring(4);
@@ -81,8 +81,6 @@ public class UCI {
         }
     }
     public static void inputGo() {
-        Board board = new Board(); // TO REMOVE
-        board.loadFromFen(actualFen);
 
         Minimax algo = new Minimax(actualFen, 2);
         Move bestMove = algo.bestMove;

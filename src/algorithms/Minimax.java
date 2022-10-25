@@ -10,7 +10,7 @@ public class Minimax {
     public Minimax(String fen, int depth){
 
         Node source_node = new Node(fen, null);
-        minimax(source_node, depth, Double.NEGATIVE_INFINITY, Double.POSITIVE_INFINITY, true);
+        double bestVal = minimax(source_node, depth, Double.NEGATIVE_INFINITY, Double.POSITIVE_INFINITY, true);
     }
     public void getBestMove(Node src){
 
@@ -26,46 +26,51 @@ public class Minimax {
 
         if (depth == 0 || terminal)
         {
-            getBestMove(source);
+            bestMove = source.nodeMove;
             return source.score;
         }
 
         source.generateChildren();
 
+        double bestVal;
         if (max){
 
-            double bestVal = Double.NEGATIVE_INFINITY;
+            bestVal = Double.NEGATIVE_INFINITY;
 
             for (Node child: source.children) {
 
                 double value = minimax(child, depth - 1, alpha, beta, false);
                 bestVal = Math.max(bestVal, value);
 
+                if (bestVal == value)
+                    bestMove = child.nodeMove;
+
                 alpha = Math.max(alpha, bestVal);
 
                 if (beta <= alpha)
                     break;
 
-                return bestVal;
             }
 
         } else {
-            double bestVal = Double.POSITIVE_INFINITY;
+            bestVal = Double.POSITIVE_INFINITY;
 
             for (Node child: source.children) {
 
                 double value = minimax(child, depth - 1, alpha, beta, true);
                 bestVal = Math.min(bestVal, value);
 
+                if (bestVal == value)
+                    bestMove = child.nodeMove;
+
                 beta = Math.min(beta, bestVal);
 
                 if (beta <= alpha)
                     break;
 
-                return bestVal;
             }
         }
-        return 0;
+        return bestVal;
     }
 
 }
