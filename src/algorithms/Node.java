@@ -16,9 +16,9 @@ public class Node {
     public Node parent = null;
     public List<Node> children;
 
-    public Node(String fenstring){
+    public Node(String fenstring, Move mv){
         board = new Board();
-
+        nodeMove = mv;
         fen = fenstring;
         board.loadFromFen(fen);
 
@@ -33,16 +33,15 @@ public class Node {
 
         for (Move move: moveList) {
 
-            nodeMove = move;
-            board.doMove(nodeMove);
+            board.doMove(move);
             String current_fen = board.getFen();
             board.undoMove();
 
-            children.add(new Node(current_fen));
+            children.add(new Node(current_fen, move));
+        }
 
-            for (Node child: children) {
-                child.parent = this;
-            }
+        for (Node child: children) {
+            child.parent = this;
         }
     }
 

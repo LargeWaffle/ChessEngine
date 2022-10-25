@@ -9,7 +9,7 @@ public class Minimax {
 
     public Minimax(String fen, int depth){
 
-        Node source_node = new Node(fen);
+        Node source_node = new Node(fen, null);
         minimax(source_node, depth, Double.NEGATIVE_INFINITY, Double.POSITIVE_INFINITY, true);
     }
     public void getBestMove(Node src){
