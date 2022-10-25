@@ -23,6 +23,8 @@ public class Node {
         board.loadFromFen(fen);
 
         score = getFenScore();
+
+        children = new ArrayList<>();
     };
 
     public void generateChildren(){
