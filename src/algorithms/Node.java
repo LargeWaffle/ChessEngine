@@ -25,7 +25,7 @@ public class Node {
         score = getFenScore();
 
         children = new ArrayList<>();
-    };
+    }
 
     public void generateChildren(){
 

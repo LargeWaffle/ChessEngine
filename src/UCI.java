@@ -3,8 +3,6 @@ import chesslib.Board;
 import chesslib.move.*;
 
 import java.util.*;
-import algorithms.Minimax.*;
-import static chesslib.Side.*;
 
 public class UCI {
     static String actualFen = "";

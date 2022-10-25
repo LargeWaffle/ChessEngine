@@ -11,7 +11,7 @@ public class Minimax {
 
         Node source_node = new Node(fen);
         minimax(source_node, depth, Double.NEGATIVE_INFINITY, Double.POSITIVE_INFINITY, true);
-    };
+    }
     public void getBestMove(Node src){
 
         while(src.parent.parent != null){
@@ -66,6 +66,6 @@ public class Minimax {
             }
         }
         return 0;
-    };
+    }
 
 }
