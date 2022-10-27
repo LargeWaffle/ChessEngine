@@ -1,11 +1,14 @@
 import algorithms.Minimax;
+import algorithms.Node;
 import chesslib.Board;
+import chesslib.Side;
 import chesslib.move.*;
 
 import java.util.*;
 
 public class UCI {
-    static String actualFen = "";
+    static Board board = new Board();
+
     static String ENGINENAME="Tomart1";
     public static void uciCommunication() {
         Scanner input = new Scanner(System.in);
@@ -59,14 +62,13 @@ public class UCI {
          System.out.println("readyok");
     }
     public static void inputUCINewGame() {
-        Board board = new Board(); // TO REMOVE
+        board.loadFromFen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
     }
     public static void inputPosition(String input) {
-        Board board = new Board(); // TO REMOVE
         input=input.substring(9).concat(" ");
         if (input.contains("startpos ")) {
             input=input.substring(9);
-            actualFen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+            board.loadFromFen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
         }
         else if (input.contains("fen")) {
             input=input.substring(4);
@@ -76,14 +78,15 @@ public class UCI {
             input=input.substring(input.indexOf("moves")+6);
             MoveList list = new MoveList();
             list.loadFromSan(input);
-            System.out.println("FEN of final position: " + list.getFen());
-            actualFen = list.getFen();
+            board.loadFromFen(list.getFen());
         }
     }
     public static void inputGo() {
 
-        Minimax algo = new Minimax(actualFen, 4);
-        Move bestMove = algo.bestMove;
+        //Minimax algo = new Minimax(board, 4);
+        boolean isMax = board.getSideToMove() == Side.WHITE;
+        Node bestNode = Minimax.minimax(board, 4, -Double.MAX_VALUE, Double.MAX_VALUE, isMax);
+        Move bestMove = bestNode.move;
 
         System.out.println("bestmove "+ bestMove);
     }

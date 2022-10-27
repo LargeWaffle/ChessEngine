@@ -4,91 +4,104 @@ import chesslib.Board;
 import chesslib.Side;
 import chesslib.move.*;
 
+import java.util.List;
+import java.util.Map;
+
 import static java.lang.Character.isLowerCase;
 import static java.lang.Character.isUpperCase;
 
 public class Minimax {
-    public Move bestMove;
 
-    public Minimax(String fen, int depth){
+    public Minimax() {
 
-        Node source_node = new Node(fen, null);
-
-        boolean isMax = source_node.board.getSideToMove() == Side.WHITE;
-
-        minimax(source_node, depth, Double.NEGATIVE_INFINITY, Double.POSITIVE_INFINITY, isMax);
     }
-    public void getBestMove(Node src){
 
-        while(src.parent.parent != null){
-            src = src.parent;
-        }
+    public static Node minimax(Board board, int depth, double alpha, double beta, boolean max){
 
-        bestMove = src.nodeMove;
-    }
-    public double minimax(Node source, int depth, double alpha, double beta, boolean max){
-
-
-        //System.out.println("My best move " + bestMove);
-        //System.out.println("Im at depth " + (3-depth));
-        boolean terminal = source.board.isDraw() || source.board.isMated();
+        boolean terminal = board.isDraw() || board.isMated();
 
         if (depth == 0 || terminal)
         {
-            return source.score;
+            return new Node(null, evaluate(board));
         }
 
-        source.generateChildren();
-
-        double bestVal;
+        Move bestMove = board.legalMoves().get(0);
         if (max){
 
-            bestVal = Double.NEGATIVE_INFINITY;
+            double maxEval = -Double.MAX_VALUE;
 
-            for (Node child: source.children) {
+            // generate children
+            List<Move> moveList = board.legalMoves();
 
-                double value = minimax(child, depth - 1, alpha, beta, false);
-                if (value > bestVal) {
-                    bestVal = value;
-                    bestMove = child.nodeMove;
+            for (Move move : moveList) {
+
+                board.doMove(move);
+                double value = minimax(board, depth - 1, alpha, beta, false).score;
+                board.undoMove();
+
+                if (value > maxEval) {
+                    maxEval = value;
+                    bestMove = move;
                 }
 
-                //bestVal = Math.max(bestVal, value);
+                alpha = Math.max(alpha, maxEval);
 
+                if (beta <= alpha)
+                    break;
+            }
 
-                alpha = Math.max(alpha, bestVal);
+            return new Node(bestMove, maxEval);
+
+        } else {
+
+            double minEval = Double.MAX_VALUE;
+
+            List<Move> moveList = board.legalMoves();
+
+            for (Move move : moveList) {
+
+                board.doMove(move);
+                double value = minimax(board, depth - 1, alpha, beta, true).score;
+                board.undoMove();
+
+                if (value < minEval) {
+                    minEval = value;
+                    bestMove = move;
+                }
+
+                beta = Math.min(beta, minEval);
 
                 if (beta <= alpha)
                     break;
 
             }
+            return new Node(bestMove, minEval);
+        }
+    }
 
-        } else {
-            bestVal = Double.POSITIVE_INFINITY;
+    public static double evaluate(Board board) {
+        int index = board.getFen().indexOf(" ");
+        String subfen = "";
 
-            for (Node child: source.children) {
+        if (index != -1)
+            subfen = board.getFen().substring(0, index);
 
-                double value = minimax(child, depth - 1, alpha, beta, true);
-                //bestVal = Math.min(bestVal, value);
+        Map<Character, Integer> values = Map.of('q', 9, 'r', 5, 'n', 3, 'b', 3, 'p', 1,
+                'Q', 9, 'R', 5, 'N', 3, 'B', 3, 'P', 1);
 
-                if (value < bestVal) {
-                    bestVal = value;
-                    bestMove = child.nodeMove;
-                }
+        char[] fen_char = subfen.toCharArray();
 
-                beta = Math.min(beta, bestVal);
+        double score = 0;
 
-                if (beta <= alpha)
-                    break;
+        for (char fc : fen_char) {
+            if (fc != 'k' && fc != 'K') {
+                score -= isLowerCase(fc) ? values.get(fc) : 0;
 
+                score += isUpperCase(fc) ? values.get(fc) : 0;
             }
         }
 
-        /*if (depth == 3)
-            System.out.println("At depth " + (4-depth) + ", my best move is " + bestMove + " with a score of " + bestVal);
-        if (depth == 4)
-            System.out.println("At depth " + (4-depth) + ", my best move is " + bestMove + " with a score of " + bestVal);*/
-        return bestVal;
+        return score;
     }
 
 }
