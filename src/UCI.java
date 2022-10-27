@@ -82,7 +82,7 @@ public class UCI {
     }
     public static void inputGo() {
 
-        Minimax algo = new Minimax(actualFen, 2);
+        Minimax algo = new Minimax(actualFen, 4);
         Move bestMove = algo.bestMove;
 
         System.out.println("bestmove "+ bestMove);

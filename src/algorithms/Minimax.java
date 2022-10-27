@@ -22,11 +22,13 @@ public class Minimax {
     }
     public double minimax(Node source, int depth, double alpha, double beta, boolean max){
 
+
+        //System.out.println("My best move " + bestMove);
+        //System.out.println("Im at depth " + (3-depth));
         boolean terminal = source.board.isDraw() || source.board.isMated();
 
         if (depth == 0 || terminal)
         {
-            bestMove = source.nodeMove;
             return source.score;
         }
 
@@ -40,10 +42,13 @@ public class Minimax {
             for (Node child: source.children) {
 
                 double value = minimax(child, depth - 1, alpha, beta, false);
-                bestVal = Math.max(bestVal, value);
-
-                if (bestVal == value)
+                if (value > bestVal) {
+                    bestVal = value;
                     bestMove = child.nodeMove;
+                }
+
+                //bestVal = Math.max(bestVal, value);
+
 
                 alpha = Math.max(alpha, bestVal);
 
@@ -58,10 +63,12 @@ public class Minimax {
             for (Node child: source.children) {
 
                 double value = minimax(child, depth - 1, alpha, beta, true);
-                bestVal = Math.min(bestVal, value);
+                //bestVal = Math.min(bestVal, value);
 
-                if (bestVal == value)
+                if (value < bestVal) {
+                    bestVal = value;
                     bestMove = child.nodeMove;
+                }
 
                 beta = Math.min(beta, bestVal);
 
@@ -70,6 +77,11 @@ public class Minimax {
 
             }
         }
+
+        /*if (depth == 3)
+            System.out.println("At depth " + (4-depth) + ", my best move is " + bestMove + " with a score of " + bestVal);
+        if (depth == 4)
+            System.out.println("At depth " + (4-depth) + ", my best move is " + bestMove + " with a score of " + bestVal);*/
         return bestVal;
     }
 

@@ -1,11 +1,24 @@
+import algorithms.Minimax;
 import chesslib.Board;
 import chesslib.move.Move;
 
 import java.util.List;
 
 public class Main {
-    public static void main(String[] args) {
-        UCI uci = new UCI();
-        UCI.uciCommunication();
+    public static void main(String[] args) throws InterruptedException {
+        //UCI uci = new UCI();
+        //UCI.uciCommunication();
+        Board board = new Board();
+        /*board.doMove("e4");
+        board.doMove("e6");
+        board.doMove("f1c4");
+        board.doMove("d8g5");*/
+        while (true) {
+            Minimax algo = new Minimax(board.getFen(), 4);
+            board.doMove(algo.bestMove);
+            System.out.println(board.toString());
+            System.out.println("\n\n");
+            Thread.sleep(3000);
+        }
     }
 }

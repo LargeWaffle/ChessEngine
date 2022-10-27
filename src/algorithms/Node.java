@@ -1,6 +1,7 @@
 package algorithms;
 
 import java.util.*;
+
 import chesslib.Board;
 import chesslib.Side;
 import chesslib.move.*;
@@ -16,7 +17,7 @@ public class Node {
     public Node parent = null;
     public List<Node> children;
 
-    public Node(String fenstring, Move mv){
+    public Node(String fenstring, Move mv) {
         board = new Board();
         nodeMove = mv;
         fen = fenstring;
@@ -25,11 +26,11 @@ public class Node {
         score = getFenScore();
     }
 
-    public void generateChildren(){
+    public void generateChildren() {
 
         List<Move> moveList = board.legalMoves();
 
-        for (Move move: moveList) {
+        for (Move move : moveList) {
 
             board.doMove(move);
             String current_fen = board.getFen();
@@ -38,12 +39,12 @@ public class Node {
             children.add(new Node(current_fen, move));
         }
 
-        for (Node child: children) {
+        for (Node child : children) {
             child.parent = this;
         }
     }
 
-    public double getFenScore(){
+    public double getFenScore() {
         int index = fen.indexOf(" ");
         String subfen = "";
         if (index != -1)
@@ -53,24 +54,24 @@ public class Node {
 
         Side side = board.getSideToMove();
 
-        //int pieceCount[] = {8, 2, 2, 2, 1, 1};
+        Map <Character, Integer> values = Map.of('q', 9, 'r', 5, 'n', 3, 'b', 3, 'p', 1,
+                'Q', 9, 'R', 5, 'N', 3, 'B', 3, 'P', 1);
 
         char[] fen_char = subfen.toCharArray();
 
-        int score = 16;
+        int score = 0;
 
-        for(char fc : fen_char){
-            int myInt;
+        for (char fc : fen_char) {
+            if (fc != 'k' && fc != 'K') {
+                score -= isLowerCase(fc) ? values.get(fc) : 0;
 
-            if (side == Side.WHITE) {
-                myInt = isLowerCase(fc) ? 1 : 0;
-
-            }else{
-                myInt = isUpperCase(fc) ? 1 : 0;
+                score += isUpperCase(fc) ? values.get(fc) : 0;
             }
-
-            score -= myInt;
         }
+
+        if (board.isKingAttacked())
+            score += 100000;
+
 
         return score;
     }
