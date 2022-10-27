@@ -47,10 +47,9 @@ public class Node {
     public double getFenScore() {
         int index = fen.indexOf(" ");
         String subfen = "";
+
         if (index != -1)
-        {
-            subfen= fen.substring(0 , index);
-        }
+            subfen = fen.substring(0, index);
 
         Side side = board.getSideToMove();
 
@@ -74,5 +73,6 @@ public class Node {
 
 
         return score;
+
     }
 }

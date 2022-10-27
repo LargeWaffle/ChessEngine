@@ -4,13 +4,19 @@ import chesslib.Board;
 import chesslib.Side;
 import chesslib.move.*;
 
+import static java.lang.Character.isLowerCase;
+import static java.lang.Character.isUpperCase;
+
 public class Minimax {
     public Move bestMove;
 
     public Minimax(String fen, int depth){
 
         Node source_node = new Node(fen, null);
-        double bestVal = minimax(source_node, depth, Double.NEGATIVE_INFINITY, Double.POSITIVE_INFINITY, true);
+
+        boolean isMax = source_node.board.getSideToMove() == Side.WHITE;
+
+        minimax(source_node, depth, Double.NEGATIVE_INFINITY, Double.POSITIVE_INFINITY, isMax);
     }
     public void getBestMove(Node src){
 
