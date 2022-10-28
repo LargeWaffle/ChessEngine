@@ -101,7 +101,19 @@ public class Minimax {
             }
         }
 
+        Side side = board.getSideToMove();
 
+        if(board.isKingAttacked())
+            if (side == Side.WHITE)
+                score = - 100;
+            else
+                score = 100;
+
+        if(board.isMated())
+            if (side == Side.WHITE)
+                score = - 10000;
+            else
+                score = 10000;
 
         return score;
     }
