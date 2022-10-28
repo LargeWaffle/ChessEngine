@@ -7,8 +7,7 @@ import chesslib.move.*;
 import java.util.List;
 import java.util.Map;
 
-import static java.lang.Character.isLowerCase;
-import static java.lang.Character.isUpperCase;
+import static java.lang.Character.*;
 
 public class Minimax {
 
@@ -86,8 +85,7 @@ public class Minimax {
         if (index != -1)
             subfen = board.getFen().substring(0, index);
 
-        Map<Character, Integer> values = Map.of('q', 9, 'r', 5, 'n', 3, 'b', 3, 'p', 1,
-                'Q', 9, 'R', 5, 'N', 3, 'B', 3, 'P', 1);
+        Map<Character, Integer> values = Map.of('q', 9, 'r', 5, 'n', 3, 'b', 3, 'p', 1);
 
         char[] fen_char = subfen.toCharArray();
 
@@ -95,11 +93,15 @@ public class Minimax {
 
         for (char fc : fen_char) {
             if (fc != 'k' && fc != 'K') {
-                score -= isLowerCase(fc) ? values.get(fc) : 0;
 
-                score += isUpperCase(fc) ? values.get(fc) : 0;
+                char current_fc = toLowerCase(fc);
+                score -= isLowerCase(fc) ? values.get(current_fc) : 0;
+
+                score += isUpperCase(fc) ? values.get(current_fc) : 0;
             }
         }
+
+
 
         return score;
     }
