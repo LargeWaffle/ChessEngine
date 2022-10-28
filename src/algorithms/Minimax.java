@@ -86,12 +86,25 @@ public class Minimax {
         if (index != -1)
             subfen = board.getFen().substring(0, index);
 
-        Map<Character, Integer> values = Map.of('Q', 9, 'R', 5, 'N', 3, 'B', 3, 'P', 1,
-                'q', -9, 'r', -5, 'n', -3, 'b', -3, 'p', -1);
+        Map<Character, Integer> values = new java.util.HashMap<>(Map.of(
+                'Q', 9, 'R', 5, 'N', 3, 'B', 3, 'P', 1,
+                'q', -9, 'r', -5, 'n', -3, 'b', -3, 'p', -1));
 
         char[] fen_char = subfen.toCharArray();
 
         double score = 0;
+        double pieceRatio = 0;
+
+        for (char fc : fen_char) {
+            if (isLowerCase(fc) || isUpperCase(fc)) {
+                pieceRatio++;
+            }
+        }
+
+        // Update knights starting from mid game
+        pieceRatio = pieceRatio / 16.0 < 5 ? 1 : 0;
+        values.put('n', values.get('n') + (int)pieceRatio);
+        values.put('N', values.get('N') - (int)pieceRatio);
 
         for (char fc : fen_char) {
             if (fc != 'k' && fc != 'K') {
