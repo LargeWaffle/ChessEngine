@@ -404,7 +404,7 @@ public class Board implements Cloneable, BoardEvent {
      * @return the captured piece, if present, or {@link Piece#NONE} otherwise
      * @see Board#movePiece(Square, Square, Piece, MoveBackup)
      */
-    protected Piece movePiece(Move move, MoveBackup backup) {
+    public Piece movePiece(Move move, MoveBackup backup) {
         return movePiece(move.getFrom(), move.getTo(), move.getPromotion(), backup);
     }
 
