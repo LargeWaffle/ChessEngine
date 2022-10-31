@@ -1,12 +1,7 @@
 package algorithms;
 
-import java.util.*;
-
 import chesslib.Board;
-import chesslib.Side;
 import chesslib.move.*;
-
-import static java.lang.Character.*;
 
 public class Node {
 
