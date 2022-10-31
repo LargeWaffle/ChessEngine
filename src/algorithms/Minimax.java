@@ -16,17 +16,16 @@ public class Minimax {
 
     }
 
-    public static Node minimax(Board board, int depth, double alpha, double beta, boolean max){
+    public static Node minimax(Board board, int depth, double alpha, double beta, boolean max) {
 
         boolean terminal = board.isDraw() || board.isMated();
 
-        if (depth == 0 || terminal)
-        {
+        if (depth == 0 || terminal) {
             return new Node(null, evaluate(board));
         }
 
         Move bestMove = board.legalMoves().get(0);
-        if (max){
+        if (max) {
 
             double maxEval = -Double.MAX_VALUE;
 
@@ -86,9 +85,9 @@ public class Minimax {
         if (index != -1)
             subfen = board.getFen().substring(0, index);
 
-        Map<Character, Integer> values = new java.util.HashMap<>(Map.of(
-                'Q', 9, 'R', 5, 'N', 3, 'B', 3, 'P', 1,
-                'q', -9, 'r', -5, 'n', -3, 'b', -3, 'p', -1));
+        Map<Character, Double> values = new java.util.HashMap<>(Map.of(
+                'Q', 9.0, 'R', 5.0, 'N', 3.0, 'B', 3.0, 'P', 1.0,
+                'q', -9.0, 'r', -5.0, 'n', -3.0, 'b', -3.0, 'p', -1.0));
 
         char[] fen_char = subfen.toCharArray();
 
@@ -103,11 +102,11 @@ public class Minimax {
 
         // Update knights starting from mid game
         pieceRatio = pieceRatio / 16.0 < 5 ? 1 : 0;
-        values.put('n', values.get('n') + (int)pieceRatio);
-        values.put('N', values.get('N') - (int)pieceRatio);
+        values.put('n', values.get('n') + (int) pieceRatio);
+        values.put('N', values.get('N') - (int) pieceRatio);
 
         for (char fc : fen_char) {
-            if (fc != 'k' && fc != 'K') {
+            if (Character.isLetter(fc) && (fc != 'k' && fc != 'K')) {
                 /*score += isLowerCase(fc) ? values.get(fc) : 0;
                 score += isUpperCase(fc) ? values.get(fc) : 0;*/
                 score += values.get(fc);
@@ -116,17 +115,11 @@ public class Minimax {
 
         Side side = board.getSideToMove();
 
-        if(board.isKingAttacked())
+        if (board.isMated())
             if (side == Side.WHITE)
-                score = - 100;
+                score = -10000.0;
             else
-                score = 100;
-
-        if(board.isMated())
-            if (side == Side.WHITE)
-                score = - 10000;
-            else
-                score = 10000;
+                score = 10000.0;
 
         return score;
     }
