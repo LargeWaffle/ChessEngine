@@ -80,6 +80,7 @@ public class Minimax {
     }
 
     public static double evaluate(Board board) {
+
         int index = board.getFen().indexOf(" ");
         String subfen = "";
 
@@ -88,46 +89,53 @@ public class Minimax {
 
         char[] fen_char = subfen.toCharArray();
 
+        Side side = board.getSideToMove();
         double score = 0.0;
-        double pieceRatio = 0.0;
 
-        for (char fc : fen_char) {
-            if (isLowerCase(fc) || isUpperCase(fc)) {
-                pieceRatio++;
+        if (values.get('N') == 3.0) {
+
+            double change = 0.0;
+            double pieceRatio = 0.0;
+
+            for (char fc : fen_char) {
+                if (side == Side.WHITE && isUpperCase(fc))
+                    pieceRatio++;
+
+                if (side == Side.BLACK && isLowerCase(fc))
+                    pieceRatio++;
             }
+
+            // Update knights starting from mid game
+            if ((pieceRatio / 16.0) < 0.5)
+                change = 1.0;
+
+            values.replace('N', values.get('N') - change);
         }
 
-        // Update knights starting from mid game
-        pieceRatio = pieceRatio / 16.0 < 5.0 ? 1.0 : 0.0;
-        values.put('N', values.get('N') - pieceRatio);
-
-        Side side = board.getSideToMove();
-
+        double lowerBound = -10.0, higherBound = 10.0;
         double whiteCount = 0.0, blackCount = 0.0;
-        double mult = side == Side.WHITE ? 1.0 : -1.0;
 
         boolean mate = board.isMated(), draw = board.isDraw();
 
         if (mate)
-            score = side == Side.WHITE ? -10.0 : 10.0;
+            score = side == Side.WHITE ? lowerBound : higherBound;
 
         if (draw)
             score = 0.0;
 
         if (!mate && !draw) {
             for (char fc : fen_char) {
-                if (Character.isLetter(fc) && (fc != 'k' && fc != 'K')) {
+                if (Character.isLetter(fc) && (fc != 'k' && fc != 'K'))
                     if (isLowerCase(fc))
                         blackCount += values.get(toUpperCase(fc));
                     else
                         whiteCount += values.get(fc);
-                }
             }
 
             score = whiteCount - blackCount;
 
-            // scale between -10:10
-            score = (10 - (-10)) * ((score - (-39)) / (39 - (-39))) + (-10);
+            // scale between lowerBound:higherBound
+            score = ((higherBound - lowerBound) * (score + 39) / (39 + 39)) + lowerBound;
         }
 
         return score;
