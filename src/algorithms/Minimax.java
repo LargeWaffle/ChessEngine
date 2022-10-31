@@ -7,13 +7,14 @@ import chesslib.move.*;
 import java.util.List;
 import java.util.Map;
 
-import static java.lang.Character.isLowerCase;
-import static java.lang.Character.isUpperCase;
+import static java.lang.Character.*;
 
 public class Minimax {
 
-    public Minimax() {
+    public static Map<Character, Double> values = new java.util.HashMap<>(Map.of(
+            'Q', 9.0, 'R', 5.0, 'N', 3.0, 'B', 3.0, 'P', 1.0));
 
+    public Minimax() {
     }
 
     public static Node minimax(Board board, int depth, double alpha, double beta, boolean max) {
@@ -85,14 +86,10 @@ public class Minimax {
         if (index != -1)
             subfen = board.getFen().substring(0, index);
 
-        Map<Character, Double> values = new java.util.HashMap<>(Map.of(
-                'Q', 9.0, 'R', 5.0, 'N', 3.0, 'B', 3.0, 'P', 1.0,
-                'q', -9.0, 'r', -5.0, 'n', -3.0, 'b', -3.0, 'p', -1.0));
-
         char[] fen_char = subfen.toCharArray();
 
-        double score = 0;
-        double pieceRatio = 0;
+        double score = 0.0;
+        double pieceRatio = 0.0;
 
         for (char fc : fen_char) {
             if (isLowerCase(fc) || isUpperCase(fc)) {
@@ -101,25 +98,37 @@ public class Minimax {
         }
 
         // Update knights starting from mid game
-        pieceRatio = pieceRatio / 16.0 < 5 ? 1 : 0;
-        values.put('n', values.get('n') + (int) pieceRatio);
-        values.put('N', values.get('N') - (int) pieceRatio);
-
-        for (char fc : fen_char) {
-            if (Character.isLetter(fc) && (fc != 'k' && fc != 'K')) {
-                /*score += isLowerCase(fc) ? values.get(fc) : 0;
-                score += isUpperCase(fc) ? values.get(fc) : 0;*/
-                score += values.get(fc);
-            }
-        }
+        pieceRatio = pieceRatio / 16.0 < 5.0 ? 1.0 : 0.0;
+        values.put('N', values.get('N') - pieceRatio);
 
         Side side = board.getSideToMove();
 
-        if (board.isMated())
-            if (side == Side.WHITE)
-                score = -10000.0;
-            else
-                score = 10000.0;
+        double whiteCount = 0.0, blackCount = 0.0;
+        double mult = side == Side.WHITE ? 1.0 : -1.0;
+
+        boolean mate = board.isMated(), draw = board.isDraw();
+
+        if (mate)
+            score = side == Side.WHITE ? -10.0 : 10.0;
+
+        if (draw)
+            score = 0.0;
+
+        if (!mate && !draw) {
+            for (char fc : fen_char) {
+                if (Character.isLetter(fc) && (fc != 'k' && fc != 'K')) {
+                    if (isLowerCase(fc))
+                        blackCount += values.get(toUpperCase(fc));
+                    else
+                        whiteCount += values.get(fc);
+                }
+            }
+
+            score = whiteCount - blackCount;
+
+            // scale between -10:10
+            score = (10 - (-10)) * ((score - (-39)) / (39 - (-39))) + (-10);
+        }
 
         return score;
     }
