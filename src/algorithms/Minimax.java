@@ -7,8 +7,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static java.lang.Character.*;
-
 public class Minimax {
 
     public static int transpSize = 100000;
@@ -188,7 +186,7 @@ public class Minimax {
         for (int i = 0; i < 64; i++) {
             if (((1L << i) & bboard) != 0L) {
                 Piece p = board.getPiece(Square.squareAt(i));
-                
+
                 if (p.getPieceSide() == Side.WHITE)
                     score += pieceValues.get(p.getPieceType());
                 else
