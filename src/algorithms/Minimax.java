@@ -189,7 +189,7 @@ public class Minimax {
         int[][] files = new int[8][8];
 
         // KNIGHT VALUE UPDATE
-        if (w == 2) {
+        if (toto_values.get('N') == 3.0 && w == 2) {
             toto_values.replace('N', toto_values.get('N') - 1.0);
         }
 
