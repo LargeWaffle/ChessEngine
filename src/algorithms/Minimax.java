@@ -6,19 +6,21 @@ import chesslib.move.*;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 import static java.lang.Character.*;
 
 public class Minimax {
 
-    public static int transpSize = 10000000;
+    public static int transpSize = 100000;
 
     public static Map<Character, Integer> values = new HashMap<>(Map.of(
             'Q', 9, 'R', 5, 'N', 3, 'B', 3, 'P', 1,
             'q', -9, 'r', -5, 'n', -3, 'b', -3, 'p', -1));
 
     public static Map<Character, Double> toto_values = new HashMap<>(Map.of(
-            'Q', 9.0, 'R', 5.0, 'N', 3.0, 'B', 3.0, 'P', 1.0));
+            'K', 200.0, 'Q', 9.0, 'R', 5.0, 'N', 3.0, 'B', 3.0, 'P', 1.0));
     public static Map<PieceType, Integer> pieceValues = new HashMap<>(Map.of(
             PieceType.KING, 15,
             PieceType.QUEEN, 9,
@@ -128,6 +130,19 @@ public class Minimax {
 
     public static double evaluate(Board board, boolean max) {
 
+        // EDGE CASES
+        double lowerBound = -10000.0, higherBound = 10000.0;
+        boolean mate = board.isMated(), draw = board.isDraw();
+
+        double score = 0.0;
+
+        if (mate)
+            return max ? lowerBound : higherBound;
+
+        if (draw)
+            return 0.0;
+
+        // BOARD ANALYSIS
         int index = board.getFen().indexOf(" ");
         String subfen = "";
 
@@ -136,19 +151,36 @@ public class Minimax {
 
         char[] fen_char = subfen.toCharArray();
 
-        double score = 0.0;
+        int[][] files = new int[8][8];
 
+        // KNIGHT VALUE UPDATE AND PAWN COUNT
         if (toto_values.get('N') == 3.0) {
 
             double change = 0.0;
             double pieceRatio = 0.0;
 
+            int level = 0, line = 0;
+
             for (char fc : fen_char) {
+
                 if (max && isUpperCase(fc))
                     pieceRatio++;
 
                 if (!max && isLowerCase(fc))
                     pieceRatio++;
+
+                if (fc == 'p') {
+                    files[level][line] = 2;
+                } else if (fc == 'P') {
+                    files[level][line] = 1;
+                }
+
+                line++;
+
+                if (fc == '/') {
+                    level++;
+                    line = 0;
+                }
             }
 
             // Update knights starting from mid game
@@ -158,31 +190,83 @@ public class Minimax {
             toto_values.replace('N', toto_values.get('N') - change);
         }
 
-        double lowerBound = -10.0, higherBound = 10.0;
-        double whiteCount = 0.0, blackCount = 0.0;
+        int w_doubled = 0, w_blocked = 0, w_isolated = 0;
+        int b_doubled = 0, b_blocked = 0, b_isolated = 0;
 
-        boolean mate = board.isMated(), draw = board.isDraw();
+        for (int i = 0; i < 8; i++) {
+            for (int j = 0; j < 8; j++) {
 
-        if (mate)
-            score = max ? lowerBound : higherBound;
+                int square = files[i][j];
+                int frontpos;
+                int leftpos = j - 1;
+                int rightpos = j + 1;
 
-        if (draw)
-            score = 0.0;
+                if (square == 1) {
+                    frontpos = i - 1;
 
-        if (!mate && !draw) {
-            for (char fc : fen_char) {
-                if (Character.isLetter(fc) && (fc != 'k' && fc != 'K'))
-                    if (isLowerCase(fc))
-                        blackCount += toto_values.get(toUpperCase(fc));
-                    else
-                        whiteCount += toto_values.get(fc);
+                    if (frontpos >= 0)
+                        if (files[frontpos][j] == 2)
+                            w_blocked++;
+                        else if (files[frontpos][j] == 1)
+                            w_doubled++;
+
+                    if (leftpos >= 0 && rightpos <= 7)
+                        if (files[i][leftpos] != 1 && files[i][rightpos] != 1)
+                            w_isolated++;
+
+
+                } else if (square == 2) {
+                    frontpos = i + 1;
+
+                    if (frontpos <= 7)
+                        if (files[frontpos][j] == 1)
+                            b_blocked++;
+                        else if (files[frontpos][j] == 2)
+                            b_doubled++;
+
+
+                    if ((leftpos >= 0 && rightpos <= 7))
+                        if (files[i][leftpos] != 2 && files[i][rightpos] != 2)
+                            b_isolated++;
+                }
             }
-
-            score = whiteCount - blackCount;
-
-            // scale between lowerBound:higherBound
-            score = ((higherBound - lowerBound) * (score + 39) / (39 + 39)) + lowerBound;
         }
+
+        StringBuilder visited = new StringBuilder();
+
+        for (char fc : fen_char) {
+            if (isUpperCase(fc)) {
+
+                boolean isVisited = visited.toString().indexOf(fc) == -1 ||
+                        visited.toString().indexOf(toLowerCase(fc)) == -1;
+
+                if (!isVisited) {
+
+                    int found = subfen.indexOf(toLowerCase(fc)) != -1 ? 1 : 0;
+
+                    score += (1 - found) * toto_values.get(fc);
+                    visited.append(fc);
+                }
+            }
+        }
+
+        int whiteMoves = 0, blackMoves = 0;
+
+        if (max) {
+            whiteMoves = board.legalMoves().size();
+            board.setSideToMove(Side.BLACK);
+            blackMoves = board.legalMoves().size();
+        } else {
+            blackMoves = board.legalMoves().size();
+            board.setSideToMove(Side.WHITE);
+            whiteMoves = board.legalMoves().size();
+        }
+
+        score -= 0.5 * (w_doubled - b_doubled + w_blocked - b_blocked + w_isolated - b_isolated);
+        score += 0.1 * (whiteMoves - blackMoves);
+        
+        // scale between lowerBound:higherBound
+        // score = ((higherBound - lowerBound) * (score + 39) / (39 + 39)) + lowerBound;
 
         return score;
     }
