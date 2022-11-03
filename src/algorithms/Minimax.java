@@ -164,9 +164,9 @@ public class Minimax {
         int w;
         if (board.gamePhase == 0) // opening phase
             w = 0;
-        else if  (board.gamePhase == 1) // middle phase
+        else if (board.gamePhase == 1) // middle phase
             w = 1;
-        else if  (board.gamePhase == 2) // end phase
+        else if (board.gamePhase == 2) // end phase
             w = 2;
 
         int index = board.getFen().indexOf(" ");
@@ -282,10 +282,12 @@ public class Minimax {
             whiteMoves = board.legalMoves().size();
             board.setSideToMove(Side.BLACK);
             blackMoves = board.legalMoves().size();
+            board.setSideToMove(Side.WHITE);
         } else {
             blackMoves = board.legalMoves().size();
             board.setSideToMove(Side.WHITE);
             whiteMoves = board.legalMoves().size();
+            board.setSideToMove(Side.BLACK);
         }
 
         score -= 0.5 * (w_doubled - b_doubled + w_blocked - b_blocked + w_isolated - b_isolated);
