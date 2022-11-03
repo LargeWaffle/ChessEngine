@@ -6,8 +6,6 @@ import chesslib.move.*;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.IntStream;
-import java.util.stream.Stream;
 
 import static java.lang.Character.*;
 
@@ -26,7 +24,7 @@ public class Minimax {
             {30, 31, 32, 33, 34, 35, 0}, // victim B, attacker K, Q, R, B, N, P, None
             {20, 21, 22, 23, 24, 25, 0}, // victim N, attacker K, Q, R, B, N, P, None
             {10, 11, 12, 13, 14, 15, 0}, // victim P, attacker K, Q, R, B, N, P, None
-            {0, 0, 0, 0, 0, 0, 0},      // no victim
+            {0,  0,  0,  0,  0,  0,  0},      // no victim
     };
     public static Map<Character, Double> toto_values = new HashMap<>(Map.of(
             'K', 200.0, 'Q', 9.0, 'R', 5.0, 'N', 3.0, 'B', 3.0, 'P', 1.0));
@@ -169,129 +167,18 @@ public class Minimax {
         else if (board.gamePhase == 2) // end phase
             w = 2;
 
-        int index = board.getFen().indexOf(" ");
-        String subfen = "";
-
-        if (index != -1)
-            subfen = board.getFen().substring(0, index);
-
-        char[] fen_char = subfen.toCharArray();
-
-        int[][] files = new int[8][8];
-
-        // KNIGHT VALUE UPDATE AND PAWN COUNT
-        if (toto_values.get('N') == 3.0) {
-
-            double change = 0.0;
-            double pieceRatio = 0.0;
-
-            int level = 0, line = 0;
-
-            for (char fc : fen_char) {
-
-                if (max && isUpperCase(fc))
-                    pieceRatio++;
-
-                if (!max && isLowerCase(fc))
-                    pieceRatio++;
-
-                if (fc == 'p') {
-                    files[level][line] = 2;
-                } else if (fc == 'P') {
-                    files[level][line] = 1;
-                }
-
-                line++;
-
-                if (fc == '/') {
-                    level++;
-                    line = 0;
-                }
-            }
-
-            // Update knights starting from mid game
-            if ((pieceRatio / 16.0) < 0.5)
-                change = 1.0;
-
-            toto_values.replace('N', toto_values.get('N') - change);
-        }
-
-        int w_doubled = 0, w_blocked = 0, w_isolated = 0;
-        int b_doubled = 0, b_blocked = 0, b_isolated = 0;
-
-        for (int i = 0; i < 8; i++) {
-            for (int j = 0; j < 8; j++) {
-
-                int square = files[i][j];
-                int frontpos;
-                int leftpos = j - 1;
-                int rightpos = j + 1;
-
-                if (square == 1) {
-                    frontpos = i - 1;
-
-                    if (frontpos >= 0)
-                        if (files[frontpos][j] == 2)
-                            w_blocked++;
-                        else if (files[frontpos][j] == 1)
-                            w_doubled++;
-
-                    if (leftpos >= 0 && rightpos <= 7)
-                        if (files[i][leftpos] != 1 && files[i][rightpos] != 1)
-                            w_isolated++;
-
-
-                } else if (square == 2) {
-                    frontpos = i + 1;
-
-                    if (frontpos <= 7)
-                        if (files[frontpos][j] == 1)
-                            b_blocked++;
-                        else if (files[frontpos][j] == 2)
-                            b_doubled++;
-
-
-                    if ((leftpos >= 0 && rightpos <= 7))
-                        if (files[i][leftpos] != 2 && files[i][rightpos] != 2)
-                            b_isolated++;
-                }
+        long bboard = board.getBitboard();
+        for (int i = 0; i < 64; i++) {
+            if (((1L << i) & bboard) != 0L) {
+                Piece p = board.getPiece(Square.squareAt(i));
+                if (p.getPieceSide() == Side.WHITE)
+                    score += pieceValues.get(p);
+                else
+                    score -= pieceValues.get(p);
             }
         }
 
-        StringBuilder visited = new StringBuilder();
-
-        for (char fc : fen_char) {
-            if (isUpperCase(fc)) {
-
-                boolean isVisited = visited.toString().indexOf(fc) == -1 ||
-                        visited.toString().indexOf(toLowerCase(fc)) == -1;
-
-                if (!isVisited) {
-
-                    int found = subfen.indexOf(toLowerCase(fc)) != -1 ? 1 : 0;
-
-                    score += (1 - found) * toto_values.get(fc);
-                    visited.append(fc);
-                }
-            }
-        }
-
-        int whiteMoves = 0, blackMoves = 0;
-
-        if (max) {
-            whiteMoves = board.legalMoves().size();
-            board.setSideToMove(Side.BLACK);
-            blackMoves = board.legalMoves().size();
-            board.setSideToMove(Side.WHITE);
-        } else {
-            blackMoves = board.legalMoves().size();
-            board.setSideToMove(Side.WHITE);
-            whiteMoves = board.legalMoves().size();
-            board.setSideToMove(Side.BLACK);
-        }
-
-        score -= 0.5 * (w_doubled - b_doubled + w_blocked - b_blocked + w_isolated - b_isolated);
-        score += 0.1 * (whiteMoves - blackMoves);
+        score += 0.1 * (MoveGenerator.getLegalMovesSize(board, Side.WHITE) - MoveGenerator.getLegalMovesSize(board, Side.BLACK));
 
         // scale between lowerBound:higherBound
         // score = ((higherBound - lowerBound) * (score + 39) / (39 + 39)) + lowerBound;
@@ -299,7 +186,7 @@ public class Minimax {
         return score;
     }
 
-    public static float moveCaptureValue(Move move, String fen) {
+    public static float moveValue(Move move, String fen) {
 
         Board simBoard = new Board();
         simBoard.loadFromFen(fen);
@@ -307,13 +194,14 @@ public class Minimax {
         simBoard.doMove(move);
         if (simBoard.isMated()) // Mate : highest
             return 80;
-        if (transposition.containsKey(simBoard.getZobristKey() % transpSize)) { // TT-move ordering : second highest
-            return 70;
-        } else { // victim/attacker capture : third highest
+        //if (transposition.containsKey(simBoard.getZobristKey() % transpSize)) // TT-move ordering : third highest
+        //     return 1;
+         else { // victim/attacker capture : second highest
             simBoard.undoMove();
             PieceType vic = simBoard.getPiece(move.getTo()).getPieceType();
             if (vic == null)
                 vic = PieceType.NONE;
+
             return vic_atk_val[pieceIndex.get(vic)][pieceIndex.get(simBoard.getPiece(move.getFrom()).getPieceType())];
         }
     }
@@ -332,7 +220,7 @@ public class Minimax {
         int i = (begin - 1);
 
         for (int j = begin; j < end; j++) {
-            if (moveCaptureValue(moveList.get(j), fen) >= moveCaptureValue(pivot, fen)) {
+            if (moveValue(moveList.get(j), fen) >= moveValue(pivot, fen)) {
                 i++;
 
                 Move swapTemp = moveList.get(i);
