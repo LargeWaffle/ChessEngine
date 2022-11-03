@@ -165,24 +165,14 @@ public class Minimax {
         else if (board.gamePhase == 2) // end phase
             w = 2;
 
-        /*
-         *
-         * BITBOARD
-         *
-         * adjacentSquares
-         * sq2Bb(Square sq)
-         * sq2RA(Square x)
-         * Sq2FA(Square x)
-         * bitsBetween(long bb, int sq1, int sq2) ???
-         * getBbtable(Square sq)
-         *
-         * */
-
         // KNIGHT VALUE UPDATE
         if (toto_values.get('N') == 3.0 && w == 2)
             toto_values.replace('N', toto_values.get('N') - 1.0);
 
+        // w_doubled, b_doubled, w_blocked, b_blocked, w_isoled, b_isolated
+        int[] pawnStats = {0, 0, 0, 0, 2, 2};
         long bboard = board.getBitboard();
+
         for (int i = 0; i < 64; i++) {
             if (((1L << i) & bboard) != 0L) {
                 Piece p = board.getPiece(Square.squareAt(i));
@@ -194,6 +184,7 @@ public class Minimax {
             }
         }
 
+        //score -= 0.5 * (w_doubled - b_doubled + w_blocked - b_blocked + w_isolated - b_isolated);
         score += 0.1 * (MoveGenerator.getLegalMovesSize(board, Side.WHITE) - MoveGenerator.getLegalMovesSize(board, Side.BLACK));
 
         // scale between lowerBound:higherBound
