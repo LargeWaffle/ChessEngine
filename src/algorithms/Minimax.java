@@ -180,24 +180,19 @@ public class Minimax {
          *
          * */
 
-        String boardFen = board.getFen();
-        char[] fen_char = boardFen.toCharArray();
-
-        int[][] files = new int[8][8];
-
         // KNIGHT VALUE UPDATE
-        if (toto_values.get('N') == 3.0 && w == 2) {
+        if (toto_values.get('N') == 3.0 && w == 2)
             toto_values.replace('N', toto_values.get('N') - 1.0);
-        }
 
         long bboard = board.getBitboard();
         for (int i = 0; i < 64; i++) {
             if (((1L << i) & bboard) != 0L) {
                 Piece p = board.getPiece(Square.squareAt(i));
+                
                 if (p.getPieceSide() == Side.WHITE)
-                    score += pieceValues.get(p);
+                    score += pieceValues.get(p.getPieceType());
                 else
-                    score -= pieceValues.get(p);
+                    score -= pieceValues.get(p.getPieceType());
             }
         }
 
