@@ -130,21 +130,15 @@ public class Board implements Cloneable, BoardEvent {
 
         int nbPieces = 0;
 
-        int index = this.getFen().indexOf(" ");
-        String subfen = "";
-
-        if (index != -1)
-            subfen = this.getFen().substring(0, index);
-
-        char[] fen_char = subfen.toCharArray();
+        char[] fen_char = this.getFen().toCharArray();
 
         for (char fc : fen_char) {
             if (isUpperCase(fc) || isLowerCase(fc))
                 nbPieces++;
             if (nbPieces == 6) // if there are 6 or more pieces left
-                return true;
+                return false;
         }
-        return false;
+        return true;
     }
 
     public void updateGamePhase(int phase) {

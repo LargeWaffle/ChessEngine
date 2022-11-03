@@ -161,59 +161,42 @@ public class Minimax {
             return 0.0;
 
         // BOARD ANALYSIS
-        int w;
-        if (board.gamePhase == 0) // opening phase
-            w = 0;
-        else if (board.gamePhase == 1) // middle phase
+
+        int w = 0; // 0 is opening phase
+
+        if (board.gamePhase == 1) // middle phase
             w = 1;
         else if (board.gamePhase == 2) // end phase
             w = 2;
 
-        int index = board.getFen().indexOf(" ");
-        String subfen = "";
-
-        if (index != -1)
-            subfen = board.getFen().substring(0, index);
-
-        char[] fen_char = subfen.toCharArray();
+        String boardFen = board.getFen();
+        char[] fen_char = boardFen.toCharArray();
 
         int[][] files = new int[8][8];
 
-        // KNIGHT VALUE UPDATE AND PAWN COUNT
-        if (toto_values.get('N') == 3.0) {
+        // KNIGHT VALUE UPDATE
+        if (w == 2) {
+            toto_values.replace('N', toto_values.get('N') - 1.0);
+        }
 
-            double change = 0.0;
-            double pieceRatio = 0.0;
+        int level = 0, line = 0;
 
-            int level = 0, line = 0;
+        for (char fc : fen_char) {
 
-            for (char fc : fen_char) {
+            if (fc == ' ')
+                break;
 
-                if (max && isUpperCase(fc))
-                    pieceRatio++;
+            if (fc == 'p')
+                files[level][line] = 2;
+            else if (fc == 'P')
+                files[level][line] = 1;
 
-                if (!max && isLowerCase(fc))
-                    pieceRatio++;
+            line++;
 
-                if (fc == 'p') {
-                    files[level][line] = 2;
-                } else if (fc == 'P') {
-                    files[level][line] = 1;
-                }
-
-                line++;
-
-                if (fc == '/') {
-                    level++;
-                    line = 0;
-                }
+            if (fc == '/') {
+                level++;
+                line = 0;
             }
-
-            // Update knights starting from mid game
-            if ((pieceRatio / 16.0) < 0.5)
-                change = 1.0;
-
-            toto_values.replace('N', toto_values.get('N') - change);
         }
 
         int w_doubled = 0, w_blocked = 0, w_isolated = 0;
@@ -268,27 +251,21 @@ public class Minimax {
 
                 if (!isVisited) {
 
-                    int found = subfen.indexOf(toLowerCase(fc)) != -1 ? 1 : 0;
+                    int found = boardFen.indexOf(toLowerCase(fc)) != -1 ? 1 : 0;
 
                     score += (1 - found) * toto_values.get(fc);
                     visited.append(fc);
                 }
             }
         }
+        
+        board.setSideToMove(Side.WHITE);
+        int whiteMoves = board.legalMoves().size();
+        board.setSideToMove(Side.BLACK);
+        int blackMoves = board.legalMoves().size();
 
-        int whiteMoves = 0, blackMoves = 0;
-
-        if (max) {
-            whiteMoves = board.legalMoves().size();
-            board.setSideToMove(Side.BLACK);
-            blackMoves = board.legalMoves().size();
+        if (max)
             board.setSideToMove(Side.WHITE);
-        } else {
-            blackMoves = board.legalMoves().size();
-            board.setSideToMove(Side.WHITE);
-            whiteMoves = board.legalMoves().size();
-            board.setSideToMove(Side.BLACK);
-        }
 
         score -= 0.5 * (w_doubled - b_doubled + w_blocked - b_blocked + w_isolated - b_isolated);
         score += 0.1 * (whiteMoves - blackMoves);
