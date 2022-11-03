@@ -55,7 +55,7 @@ public class Minimax {
         boolean terminal = board.isDraw() || board.isMated();
 
         if (depth == 0 || terminal) {
-            Node node = new Node(null, evaluate(board));
+            Node node = new Node(null, evaluate(board, max));
             transposition.put(board.getZobristKey() % transpSize, new HashEntry(board.getZobristKey(), depth, 0, node));
             return node;
         }
@@ -126,7 +126,7 @@ public class Minimax {
         }
     }
 
-    public static double evaluate(Board board) {
+    public static double evaluate(Board board, boolean max) {
 
         int index = board.getFen().indexOf(" ");
         String subfen = "";
@@ -136,7 +136,6 @@ public class Minimax {
 
         char[] fen_char = subfen.toCharArray();
 
-        Side side = board.getSideToMove();
         double score = 0.0;
 
         if (toto_values.get('N') == 3.0) {
@@ -145,10 +144,10 @@ public class Minimax {
             double pieceRatio = 0.0;
 
             for (char fc : fen_char) {
-                if (side == Side.WHITE && isUpperCase(fc))
+                if (max && isUpperCase(fc))
                     pieceRatio++;
 
-                if (side == Side.BLACK && isLowerCase(fc))
+                if (!max && isLowerCase(fc))
                     pieceRatio++;
             }
 
@@ -165,7 +164,7 @@ public class Minimax {
         boolean mate = board.isMated(), draw = board.isDraw();
 
         if (mate)
-            score = side == Side.WHITE ? lowerBound : higherBound;
+            score = max ? lowerBound : higherBound;
 
         if (draw)
             score = 0.0;

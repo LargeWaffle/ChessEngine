@@ -75,7 +75,7 @@ public class UCI {
 
         //Minimax algo = new Minimax(board, 4);
         boolean isMax = board.getSideToMove() == Side.WHITE;
-        Node bestNode = Minimax.minimax(board, 4, -Double.MAX_VALUE, Double.MAX_VALUE, isMax);
+        Node bestNode = Minimax.minimax(board, 3, -Double.MAX_VALUE, Double.MAX_VALUE, isMax);
         Move bestMove = bestNode.move;
         System.out.println("Nodes explored " + Minimax.cpt);
         System.out.println("bestmove " + bestMove);
