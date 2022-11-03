@@ -169,6 +169,20 @@ public class Minimax {
         else if (board.gamePhase == 2) // end phase
             w = 2;
 
+
+        /*
+         *
+         * BITBOARD
+         *
+         * adjacentSquares
+         * sq2Bb(Square sq)
+         * sq2RA(Square x)
+         * Sq2FA(Square x)
+         * bitsBetween(long bb, int sq1, int sq2) ???
+         * getBbtable(Square sq)
+         *
+         * */
+
         String boardFen = board.getFen();
         char[] fen_char = boardFen.toCharArray();
 
@@ -258,14 +272,19 @@ public class Minimax {
                 }
             }
         }
-        
-        board.setSideToMove(Side.WHITE);
-        int whiteMoves = board.legalMoves().size();
-        board.setSideToMove(Side.BLACK);
-        int blackMoves = board.legalMoves().size();
 
-        if (max)
+        int whiteMoves = 0, blackMoves = 0;
+        if (max) {
+            whiteMoves = board.legalMoves().size();
+            board.setSideToMove(Side.BLACK);
+            blackMoves = board.legalMoves().size();
             board.setSideToMove(Side.WHITE);
+        } else {
+            blackMoves = board.legalMoves().size();
+            board.setSideToMove(Side.WHITE);
+            whiteMoves = board.legalMoves().size();
+            board.setSideToMove(Side.BLACK);
+        }
 
         score -= 0.5 * (w_doubled - b_doubled + w_blocked - b_blocked + w_isolated - b_isolated);
         score += 0.1 * (whiteMoves - blackMoves);
