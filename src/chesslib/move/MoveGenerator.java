@@ -419,4 +419,15 @@ public class MoveGenerator {
         }
     }
 
+    public static int getLegalMovesSize(Board board, Side side) throws MoveGeneratorException {
+        try {
+            board.setSideToMove(side);
+            List<Move> moves = generatePseudoLegalMoves(board);
+            moves.removeIf(move -> !board.isMoveLegal(move, false));
+            return moves.size();
+        } catch (Exception e) {
+            throw new MoveGeneratorException("Couldn't generate Legal moves: ", e);
+        }
+    }
+
 }
