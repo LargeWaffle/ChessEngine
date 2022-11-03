@@ -73,13 +73,18 @@ public class UCI {
 
     public static void inputGo() {
 
-        //Minimax algo = new Minimax(board, 4);
         boolean isMax = board.getSideToMove() == Side.WHITE;
         Node bestNode = Minimax.minimax(board, 5, -Double.MAX_VALUE, Double.MAX_VALUE, isMax);
         Move bestMove = bestNode.move;
         System.out.println("Nodes explored " + Minimax.cpt);
         System.out.println("bestmove " + bestMove);
         Minimax.cpt = 0;
+        if (board.getMoveCounter() == 10 || board.getMoveCounter() == 11) { // transition to middle phase
+            board.updateGamePhase(1);
+        }
+        if (board.isSetEndPhase()) { // transition to end phase
+            board.updateGamePhase(2);
+        }
     }
 
     public static void inputQuit() {

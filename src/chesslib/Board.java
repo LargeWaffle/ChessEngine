@@ -18,6 +18,8 @@ package chesslib;
 
 import static chesslib.Bitboard.extractLsb;
 import static chesslib.Constants.emptyMove;
+import static java.lang.Character.isLowerCase;
+import static java.lang.Character.isUpperCase;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -63,6 +65,8 @@ public class Board implements Cloneable, BoardEvent {
             keys.add(key);
         }
     }
+
+    public int gamePhase = 0; // phase 0 is opening, 1 is middle and 2 is end
 
     private final LinkedList<MoveBackup> backup;
     private final EnumMap<BoardEventType, List<BoardEventListener>> eventListener;
@@ -120,9 +124,37 @@ public class Board implements Cloneable, BoardEvent {
         setEnableEvents(true);
     }
 
+    public boolean isSetEndPhase() {
+        if (gamePhase == 2) // if end phase is already set
+            return false;
+
+        int nbPieces = 0;
+
+        int index = this.getFen().indexOf(" ");
+        String subfen = "";
+
+        if (index != -1)
+            subfen = this.getFen().substring(0, index);
+
+        char[] fen_char = subfen.toCharArray();
+
+        for (char fc : fen_char) {
+            if (isUpperCase(fc) || isLowerCase(fc))
+                nbPieces++;
+            if (nbPieces == 6) // if there are 6 or more pieces left
+                return true;
+        }
+        return false;
+    }
+
+    public void updateGamePhase(int phase) {
+        gamePhase = phase;
+    }
+
     /*
      * does move lead to a promotion?
      */
+
     private static boolean isPromoRank(Side side, Move move) {
         if (side.equals(Side.WHITE) &&
                 move.getTo().getRank().equals(Rank.RANK_8)) {

@@ -19,6 +19,15 @@ public class Minimax {
             'Q', 9, 'R', 5, 'N', 3, 'B', 3, 'P', 1,
             'q', -9, 'r', -5, 'n', -3, 'b', -3, 'p', -1));
 
+    public static int[][] vic_atk_val = {
+            {60, 61, 62, 63, 64, 65, 0},       // victim K, attacker K, Q, R, B, N, P, None
+            {50, 51, 52, 53, 54, 55, 0}, // victim Q, attacker K, Q, R, B, N, P, None
+            {40, 41, 42, 43, 44, 45, 0}, // victim R, attacker K, Q, R, B, N, P, None
+            {30, 31, 32, 33, 34, 35, 0}, // victim B, attacker K, Q, R, B, N, P, None
+            {20, 21, 22, 23, 24, 25, 0}, // victim N, attacker K, Q, R, B, N, P, None
+            {10, 11, 12, 13, 14, 15, 0}, // victim P, attacker K, Q, R, B, N, P, None
+            {0, 0, 0, 0, 0, 0, 0},      // no victim
+    };
     public static Map<Character, Double> toto_values = new HashMap<>(Map.of(
             'K', 200.0, 'Q', 9.0, 'R', 5.0, 'N', 3.0, 'B', 3.0, 'P', 1.0));
     public static Map<PieceType, Integer> pieceValues = new HashMap<>(Map.of(
@@ -29,6 +38,15 @@ public class Minimax {
             PieceType.BISHOP, 3,
             PieceType.PAWN, 1,
             PieceType.NONE, 0));
+
+    public static Map<PieceType, Integer> pieceIndex = new HashMap<>(Map.of(
+            PieceType.KING, 0,
+            PieceType.QUEEN, 1,
+            PieceType.ROOK, 2,
+            PieceType.KNIGHT, 3,
+            PieceType.BISHOP, 4,
+            PieceType.PAWN, 5,
+            PieceType.NONE, 6));
 
     public static Map<Long, HashEntry> transposition = new HashMap<>(transpSize);
     public static double cpt = 0;
@@ -143,6 +161,14 @@ public class Minimax {
             return 0.0;
 
         // BOARD ANALYSIS
+        int w;
+        if (board.gamePhase == 0) // opening phase
+            w = 0;
+        else if  (board.gamePhase == 1) // middle phase
+            w = 1;
+        else if  (board.gamePhase == 2) // end phase
+            w = 2;
+
         int index = board.getFen().indexOf(" ");
         String subfen = "";
 
@@ -264,7 +290,7 @@ public class Minimax {
 
         score -= 0.5 * (w_doubled - b_doubled + w_blocked - b_blocked + w_isolated - b_isolated);
         score += 0.1 * (whiteMoves - blackMoves);
-        
+
         // scale between lowerBound:higherBound
         // score = ((higherBound - lowerBound) * (score + 39) / (39 + 39)) + lowerBound;
 
@@ -277,21 +303,16 @@ public class Minimax {
         simBoard.loadFromFen(fen);
 
         simBoard.doMove(move);
-        if (simBoard.isMated())
-            return 100;
-        else if (simBoard.isKingAttacked())
-            return 10;
-        else {
+        if (simBoard.isMated()) // Mate : highest
+            return 80;
+        if (transposition.containsKey(simBoard.getZobristKey() % transpSize)) { // TT-move ordering : second highest
+            return 70;
+        } else { // victim/attacker capture : third highest
             simBoard.undoMove();
-
-            Piece cap = simBoard.getPiece(move.getTo());
-            if (cap == Piece.NONE)
-                return 0;
-            else {
-                PieceType captured = cap.getPieceType();
-                PieceType movingPiece = simBoard.getPiece(move.getFrom()).getPieceType();
-                return ((float) pieceValues.get(captured) / pieceValues.get(movingPiece));
-            }
+            PieceType vic = simBoard.getPiece(move.getTo()).getPieceType();
+            if (vic == null)
+                vic = PieceType.NONE;
+            return vic_atk_val[pieceIndex.get(vic)][pieceIndex.get(simBoard.getPiece(move.getFrom()).getPieceType())];
         }
     }
 
