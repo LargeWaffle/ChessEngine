@@ -4,8 +4,7 @@ import chesslib.*;
 import chesslib.move.*;
 
 import java.util.*;
-
-import static java.lang.Character.*;
+import static java.lang.Long.bitCount;
 
 public class Minimax {
 
@@ -274,22 +273,13 @@ public class Minimax {
         }
 
         // Control evaluation
-        long white_bit, black_bit;
-        int count = 0;
         for (int i = 0; i < 64; i++) {
-            white_bit = board.squareAttackedBy(Square.squareAt(i), Side.WHITE);
-            black_bit = board.squareAttackedBy(Square.squareAt(i), Side.BLACK);
-            for (int j = 0; j < 64; j++) {
-                if (((1L << j) & white_bit) != 0L)
-                    count += 1;
-                if (((1L << j) & black_bit) != 0L)
-                    count -= 1;
-            }
-            if (count > 0)
+            int wCount = bitCount(board.squareAttackedBy(Square.squareAt(i), Side.WHITE));
+            int bCount = bitCount(board.squareAttackedBy(Square.squareAt(i), Side.BLACK));
+            if (wCount > bCount)
                 controlScore += 1;
-            else if (count < 0)
+            else if (wCount < bCount)
                 controlScore -= 1;
-            count = 0;
         }
 
         // Mobility evaluation
