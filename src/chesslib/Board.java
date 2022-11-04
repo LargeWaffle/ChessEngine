@@ -178,11 +178,11 @@ public class Board implements Cloneable, BoardEvent {
         return ep;
     }
 
-    private static IntStream zeroToSeven() {
+    public static IntStream zeroToSeven() {
         return IntStream.iterate(0, i -> i + 1).limit(8);
     }
 
-    private static IntStream sevenToZero() {
+    public static IntStream sevenToZero() {
         return IntStream.iterate(7, i -> i - 1).limit(8);
     }
 

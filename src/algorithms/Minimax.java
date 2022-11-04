@@ -3,9 +3,14 @@ package algorithms;
 import chesslib.*;
 import chesslib.move.*;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Supplier;
+import java.util.stream.IntStream;
+
+import static chesslib.Bitboard.*;
 
 public class Minimax {
 
@@ -171,7 +176,73 @@ public class Minimax {
 
         // w_doubled, b_doubled, w_blocked, b_blocked, w_isoled, b_isolated
         int[] pawnStats = {0, 0, 0, 0, 2, 2};
+
         long bboard = board.getBitboard();
+
+        long copyBoard = bboard;
+
+        while (copyBoard != 0L) {
+            int sq = bitScanForward(copyBoard);
+            copyBoard = extractLsb(copyBoard);
+
+            Square currentSquare = Square.squareAt(sq);
+            Square[] sideSquares = currentSquare.getSideSquares();
+            Piece p = board.getPiece(currentSquare);
+
+            String sqName = currentSquare.value();
+            char[] sqNameChar = sqName.toCharArray();
+
+            if (p == Piece.WHITE_PAWN) {
+
+                if (sqNameChar[1] != '8') {
+
+                    sqNameChar[1] = (char) ((int) sqNameChar[1] + 1);
+
+                    Square frontSquare = Square.fromValue(String.valueOf(sqNameChar));
+                    Piece frontPiece = board.getPiece(frontSquare);
+
+                    if (frontPiece == Piece.WHITE_PAWN)
+                        pawnStats[0]++;
+                    else if (frontPiece != Piece.NONE)
+                        pawnStats[2]++;
+                }
+
+                boolean isIsolated = true;
+
+                for (Square square : sideSquares)
+                    if (board.getPiece(square) == Piece.WHITE_PAWN)
+                        isIsolated = false;
+
+                if (isIsolated)
+                    pawnStats[4]++;
+            }
+
+            if (p == Piece.BLACK_PAWN) {
+
+                if (sqNameChar[1] != '1') {
+
+                    sqNameChar[1] = (char) ((int) sqNameChar[1] - 1);
+
+                    Square frontSquare = Square.fromValue(String.valueOf(sqNameChar));
+                    Piece frontPiece = board.getPiece(frontSquare);
+
+                    if (frontPiece == Piece.BLACK_PAWN)
+                        pawnStats[1]++;
+                    else if (frontPiece != Piece.NONE)
+                        pawnStats[3]++;
+
+                }
+
+                boolean isIsolated = true;
+
+                for (Square square : sideSquares)
+                    if (board.getPiece(square) == Piece.BLACK_PAWN)
+                        isIsolated = false;
+
+                if (isIsolated)
+                    pawnStats[5]++;
+            }
+        }
 
         for (int i = 0; i < 64; i++) {
             if (((1L << i) & bboard) != 0L) {
@@ -184,7 +255,7 @@ public class Minimax {
             }
         }
 
-        //score -= 0.5 * (w_doubled - b_doubled + w_blocked - b_blocked + w_isolated - b_isolated);
+        score -= 0.5 * (pawnStats[0] - pawnStats[1] + pawnStats[2] - pawnStats[3] + pawnStats[4] - pawnStats[5]);
         score += 0.1 * (MoveGenerator.getLegalMovesSize(board, Side.WHITE) - MoveGenerator.getLegalMovesSize(board, Side.BLACK));
 
         // scale between lowerBound:higherBound
