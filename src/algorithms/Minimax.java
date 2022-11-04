@@ -3,18 +3,15 @@ package algorithms;
 import chesslib.*;
 import chesslib.move.*;
 
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.function.Supplier;
-import java.util.stream.IntStream;
-
-import static chesslib.Bitboard.*;
+import java.util.*;
+import static java.lang.Long.bitCount;
 
 public class Minimax {
 
     public static int transpSize = 100000;
+
+
+    public static double lowerBound = -10000.0, higherBound = 10000.0;
 
     public static Map<Character, Integer> values = new HashMap<>(Map.of(
             'Q', 9, 'R', 5, 'N', 3, 'B', 3, 'P', 1,
@@ -27,17 +24,17 @@ public class Minimax {
             {30, 31, 32, 33, 34, 35, 0}, // victim B, attacker K, Q, R, B, N, P, None
             {20, 21, 22, 23, 24, 25, 0}, // victim N, attacker K, Q, R, B, N, P, None
             {10, 11, 12, 13, 14, 15, 0}, // victim P, attacker K, Q, R, B, N, P, None
-            {0, 0, 0, 0, 0, 0, 0},      // no victim
+            {0,  0,  0,  0,  0,  0,  0},      // no victim
     };
     public static Map<Character, Double> toto_values = new HashMap<>(Map.of(
             'K', 200.0, 'Q', 9.0, 'R', 5.0, 'N', 3.0, 'B', 3.0, 'P', 1.0));
     public static Map<PieceType, Integer> pieceValues = new HashMap<>(Map.of(
-            PieceType.KING, 15,
-            PieceType.QUEEN, 9,
-            PieceType.ROOK, 5,
-            PieceType.KNIGHT, 3,
-            PieceType.BISHOP, 3,
-            PieceType.PAWN, 1,
+            PieceType.KING, 20000,
+            PieceType.QUEEN, 900,
+            PieceType.ROOK, 500,
+            PieceType.KNIGHT, 330,
+            PieceType.BISHOP, 320,
+            PieceType.PAWN, 120,
             PieceType.NONE, 0));
 
     public static Map<PieceType, Integer> pieceIndex = new HashMap<>(Map.of(
@@ -52,15 +49,108 @@ public class Minimax {
     public static Map<Long, HashEntry> transposition = new HashMap<>(transpSize);
     public static double cpt = 0;
 
+    public static List<Integer> pawnTable = Arrays.asList(
+            0,  0,  0,  0,  0,  0,  0,  0,
+            50, 50, 50, 50, 50, 50, 50, 50,
+            10, 10, 20, 30, 30, 20, 10, 10,
+            5,  5, 10, 25, 25, 10,  5,  5,
+            0,  0,  0, 20, 20,  0,  0,  0,
+            5, -5,-10,  0,  0,-10, -5,  5,
+            5, 10, 10,-20,-20, 10, 10,  5,
+            0,  0,  0,  0,  0,  0,  0,  0);
+
+    public static List<Integer> knightTable = Arrays.asList(
+            -50,-40,-30,-30,-30,-30,-40,-50,
+            -40,-20,  0,  0,  0,  0,-20,-40,
+            -30,  0, 10, 15, 15, 10,  0,-30,
+            -30,  5, 15, 20, 20, 15,  5,-30,
+            -30,  0, 15, 20, 20, 15,  0,-30,
+            -30,  5, 10, 15, 15, 10,  5,-30,
+            -40,-20,  0,  5,  5,  0,-20,-40,
+            -50,-40,-30,-30,-30,-30,-40,-50);
+
+    public static List<Integer> bishopTable = Arrays.asList(
+            -20,-10,-10,-10,-10,-10,-10,-20,
+            -10,  0,  0,  0,  0,  0,  0,-10,
+            -10,  0,  5, 10, 10,  5,  0,-10,
+            -10,  5,  5, 10, 10,  5,  5,-10,
+            -10,  0, 10, 10, 10, 10,  0,-10,
+            -10, 10, 10, 10, 10, 10, 10,-10,
+            -10,  5,  0,  0,  0,  0,  5,-10,
+            -20,-10,-10,-10,-10,-10,-10,-20);
+
+    public static List<Integer> rookTable = Arrays.asList(
+            0,  0,  0,  0,  0,  0,  0,  0,
+            5, 10, 10, 10, 10, 10, 10,  5,
+            -5,  0,  0,  0,  0,  0,  0, -5,
+            -5,  0,  0,  0,  0,  0,  0, -5,
+            -5,  0,  0,  0,  0,  0,  0, -5,
+            -5,  0,  0,  0,  0,  0,  0, -5,
+            -5,  0,  0,  0,  0,  0,  0, -5,
+            0,  0,  0,  5,  5,  0,  0,  0);
+
+    public static List<Integer> queenTable = Arrays.asList(
+            -20,-10,-10, -5, -5,-10,-10,-20,
+            -10,  0,  0,  0,  0,  0,  0,-10,
+            -10,  0,  5,  5,  5,  5,  0,-10,
+            -5,  0,  5,  5,  5,  5,  0, -5,
+            0,  0,  5,  5,  5,  5,  0, -5,
+            -10,  5,  5,  5,  5,  5,  0,-10,
+            -10,  0,  5,  0,  0,  0,  0,-10,
+            -20,-10,-10, -5, -5,-10,-10,-20);
+
+    public static List<Integer> kingMiddleTable = Arrays.asList(
+            -20,-10,-10, -5, -5,-10,-10,-20,
+            -10,  0,  0,  0,  0,  0,  0,-10,
+            -10,  0,  5,  5,  5,  5,  0,-10,
+            -5,  0,  5,  5,  5,  5,  0, -5,
+            0,  0,  5,  5,  5,  5,  0, -5,
+            -10,  5,  5,  5,  5,  5,  0,-10,
+            -10,  0,  5,  0,  0,  0,  0,-10,
+            -20,-10,-10, -5, -5,-10,-10,-20);
+
+    public static List<Integer> kingEndingTable = Arrays.asList(
+            -50,-40,-30,-20,-20,-30,-40,-50,
+            -30,-20,-10,  0,  0,-10,-20,-30,
+            -30,-10, 20, 30, 30, 20,-10,-30,
+            -30,-10, 30, 40, 40, 30,-10,-30,
+            -30,-10, 30, 40, 40, 30,-10,-30,
+            -30,-10, 20, 30, 30, 20,-10,-30,
+            -30,-30,  0,  0,  0,  0,-30,-30,
+            -50,-30,-30,-30,-30,-30,-30,-50);
+
+    public static Map<PieceType, List<Integer>> midgamePST = new HashMap<>(Map.of(
+            PieceType.PAWN, pawnTable,
+            PieceType.KNIGHT, knightTable,
+            PieceType.BISHOP, bishopTable,
+            PieceType.ROOK, rookTable,
+            PieceType.QUEEN, queenTable,
+            PieceType.KING, kingMiddleTable));
+
+    public static Map<PieceType, List<Integer>> endgamePST = new HashMap<>(Map.of(
+            PieceType.PAWN, pawnTable,
+            PieceType.KNIGHT, knightTable,
+            PieceType.BISHOP, bishopTable,
+            PieceType.ROOK, rookTable,
+            PieceType.QUEEN, queenTable,
+            PieceType.KING, kingEndingTable));
+
     public Minimax() {
 
     }
 
     public static Node minimax(Board board, int depth, double alpha, double beta, boolean max) {
 
-        if (transposition.containsKey(board.getZobristKey() % transpSize)) {
-            HashEntry rec = transposition.get(board.getZobristKey() % transpSize);
-            if (rec.zobrist == board.getZobristKey()) {
+        long zKey = board.getZobristKey();
+        boolean draw = board.isDraw();
+        boolean mated = board.isMated();
+        boolean terminal = draw || mated;
+
+        cpt++;
+
+        if (transposition.containsKey(zKey % transpSize)) {
+            HashEntry rec = transposition.get(zKey % transpSize);
+            if (rec.zobrist == zKey) {
                 if (rec.depth >= depth) {
                     if (rec.flag == 0)
                         return rec.node;
@@ -72,29 +162,25 @@ public class Minimax {
             }
         }
 
-        cpt++;
-        boolean terminal = board.isDraw() || board.isMated();
+        // generate children
+        List<Move> moveList = board.legalMoves();
 
-        if (depth == 0 || terminal) {
-            Node node = new Node(null, evaluate(board, max));
-            transposition.put(board.getZobristKey() % transpSize, new HashEntry(board.getZobristKey(), depth, 0, node));
-            return node;
-        }
+        if (depth == 0 || terminal)
+            return new Node(null, evaluate(board, max, board.gamePhase, draw, mated, moveList.size()));
 
-        Move bestMove = board.legalMoves().get(0);
+        // order the list by capturing moves first to maximize alpha beta cutoff
+        moveList.sort(Comparator.comparingInt((Move m) ->
+                (int) moveValue(board.getPiece(m.getTo()).getPieceType(), board.getPiece(m.getFrom()).getPieceType(), zKey)));
+        Collections.reverse(moveList);
+
+        Move bestMove = moveList.get(0);
+
         if (max) {
 
             int hashf = 1;
             double maxEval = -Double.MAX_VALUE;
 
-            // generate children
-            List<Move> moveList = board.legalMoves();
-
-            // order the list by capturing moves first to maximize alpha beta cutoff
-            quickSort(moveList, board.getFen(), 0, moveList.size() - 1);
-
             for (Move move : moveList) {
-
                 board.doMove(move);
                 double value = minimax(board, depth - 1, alpha, beta, false).score;
                 board.undoMove();
@@ -112,7 +198,7 @@ public class Minimax {
             }
 
             Node node = new Node(bestMove, maxEval);
-            transposition.put(board.getZobristKey() % transpSize, new HashEntry(board.getZobristKey(), depth, hashf, node));
+            transposition.put(zKey % transpSize, new HashEntry(zKey, depth, hashf, node));
             return node;
 
         } else {
@@ -120,10 +206,7 @@ public class Minimax {
             int hashf = 2;
             double minEval = Double.MAX_VALUE;
 
-            List<Move> moveList = board.legalMoves();
-
             for (Move move : moveList) {
-
                 board.doMove(move);
                 double value = minimax(board, depth - 1, alpha, beta, true).score;
                 board.undoMove();
@@ -142,176 +225,87 @@ public class Minimax {
             }
 
             Node node = new Node(bestMove, minEval);
-            transposition.put(board.getZobristKey() % transpSize, new HashEntry(board.getZobristKey(), depth, hashf, node));
+            transposition.put(zKey % transpSize, new HashEntry(zKey, depth, hashf, node));
             return node;
         }
     }
 
-    public static double evaluate(Board board, boolean max) {
+    public static double evaluate(Board board, boolean max, int phase, boolean draw, boolean mated, int playingMoveSize) {
 
         // EDGE CASES
-        double lowerBound = -10000.0, higherBound = 10000.0;
-        boolean mate = board.isMated(), draw = board.isDraw();
+        double score = 0.0, materialScore = 0.0, controlScore = 0.0, mobilityScore = 0.0;
 
-        double score = 0.0;
-
-        if (mate)
+        if (mated)
             return max ? lowerBound : higherBound;
 
         if (draw)
             return 0.0;
 
+        int matW = 0, contW = 0, mobW = 0;
         // BOARD ANALYSIS
-
-        int w = 0; // 0 is opening phase
-
-        if (board.gamePhase == 1) // middle phase
-            w = 1;
-        else if (board.gamePhase == 2) // end phase
-            w = 2;
-
-        // KNIGHT VALUE UPDATE
-        if (toto_values.get('N') == 3.0 && w == 2)
-            toto_values.replace('N', toto_values.get('N') - 1.0);
-
-        // w_doubled, b_doubled, w_blocked, b_blocked, w_isoled, b_isolated
-        int[] pawnStats = {0, 0, 0, 0, 2, 2};
-
-        long bboard = board.getBitboard();
-
-        long copyBoard = bboard;
-
-        while (copyBoard != 0L) {
-            int sq = bitScanForward(copyBoard);
-            copyBoard = extractLsb(copyBoard);
-
-            Square currentSquare = Square.squareAt(sq);
-            Square[] sideSquares = currentSquare.getSideSquares();
-            Piece p = board.getPiece(currentSquare);
-
-            String sqName = currentSquare.value();
-            char[] sqNameChar = sqName.toCharArray();
-
-            if (p == Piece.WHITE_PAWN) {
-
-                if (sqNameChar[1] != '8') {
-
-                    sqNameChar[1] = (char) ((int) sqNameChar[1] + 1);
-
-                    Square frontSquare = Square.fromValue(String.valueOf(sqNameChar));
-                    Piece frontPiece = board.getPiece(frontSquare);
-
-                    if (frontPiece == Piece.WHITE_PAWN)
-                        pawnStats[0]++;
-                    else if (frontPiece != Piece.NONE)
-                        pawnStats[2]++;
-                }
-
-                boolean isIsolated = true;
-
-                for (Square square : sideSquares)
-                    if (board.getPiece(square) == Piece.WHITE_PAWN)
-                        isIsolated = false;
-
-                if (isIsolated)
-                    pawnStats[4]++;
-            }
-
-            if (p == Piece.BLACK_PAWN) {
-
-                if (sqNameChar[1] != '1') {
-
-                    sqNameChar[1] = (char) ((int) sqNameChar[1] - 1);
-
-                    Square frontSquare = Square.fromValue(String.valueOf(sqNameChar));
-                    Piece frontPiece = board.getPiece(frontSquare);
-
-                    if (frontPiece == Piece.BLACK_PAWN)
-                        pawnStats[1]++;
-                    else if (frontPiece != Piece.NONE)
-                        pawnStats[3]++;
-
-                }
-
-                boolean isIsolated = true;
-
-                for (Square square : sideSquares)
-                    if (board.getPiece(square) == Piece.BLACK_PAWN)
-                        isIsolated = false;
-
-                if (isIsolated)
-                    pawnStats[5]++;
-            }
+        if (phase == 0) { // opening phase
+            matW = 1;
+            contW = 40;
+            mobW = 2;
+        }
+        else if (phase == 1) { // middle phase
+            matW = 1;
+            contW = 40;
+            mobW = 10;
+        }
+        else if (phase == 2) { // end phase
+            matW = 1;
+            contW = 10;
+            mobW = 2;
         }
 
+        // Material evaluation
+        long bboard = board.getBitboard();
         for (int i = 0; i < 64; i++) {
             if (((1L << i) & bboard) != 0L) {
                 Piece p = board.getPiece(Square.squareAt(i));
-
+                PieceType type = p.getPieceType();
                 if (p.getPieceSide() == Side.WHITE)
-                    score += pieceValues.get(p.getPieceType());
+                    materialScore += pieceValues.get(type) + (phase == 1 ? midgamePST.get(type).get(i) : endgamePST.get(type).get(i));
                 else
-                    score -= pieceValues.get(p.getPieceType());
+                    materialScore -= pieceValues.get(type) - (phase == 1 ? midgamePST.get(type).get(63-i) : endgamePST.get(type).get(63-i));
             }
         }
 
-        score -= 0.5 * (pawnStats[0] - pawnStats[1] + pawnStats[2] - pawnStats[3] + pawnStats[4] - pawnStats[5]);
-        score += 0.1 * (MoveGenerator.getLegalMovesSize(board, Side.WHITE) - MoveGenerator.getLegalMovesSize(board, Side.BLACK));
+        // Control evaluation
+        for (int i = 0; i < 64; i++) {
+            int wCount = bitCount(board.squareAttackedBy(Square.squareAt(i), Side.WHITE));
+            int bCount = bitCount(board.squareAttackedBy(Square.squareAt(i), Side.BLACK));
+            if (wCount > bCount)
+                controlScore += 1;
+            else if (wCount < bCount)
+                controlScore -= 1;
+        }
 
-        // scale between lowerBound:higherBound
-        // score = ((higherBound - lowerBound) * (score + 39) / (39 + 39)) + lowerBound;
+        // Mobility evaluation
+        // w à 10 trop pour start : il yonk sa dame vers l'avant comme un dégénéré
+        if (max)
+            mobilityScore += playingMoveSize - MoveGenerator.getLegalMovesSize(board, Side.BLACK);
+        else
+            mobilityScore += MoveGenerator.getLegalMovesSize(board, Side.WHITE) - playingMoveSize;
 
+        // Tapered evaluation
+        score = matW * materialScore + contW * controlScore + mobW * mobilityScore;
+
+        // scale between lowerBound and higherBound
+        score = (score - lowerBound) / (higherBound - lowerBound);
         return score;
     }
 
-    public static float moveValue(Move move, String fen) {
+    public static float moveValue(PieceType vic, PieceType atk, long zob) {
 
-        Board simBoard = new Board();
-        simBoard.loadFromFen(fen);
-
-        simBoard.doMove(move);
-        if (simBoard.isMated()) // Mate : highest
-            return 80;
-            //if (transposition.containsKey(simBoard.getZobristKey() % transpSize)) // TT-move ordering : third highest
-            //     return 1;
-        else { // victim/attacker capture : second highest
-            simBoard.undoMove();
-            PieceType vic = simBoard.getPiece(move.getTo()).getPieceType();
-            if (vic == null)
-                vic = PieceType.NONE;
-
-            return vic_atk_val[pieceIndex.get(vic)][pieceIndex.get(simBoard.getPiece(move.getFrom()).getPieceType())];
+        if (vic == null) {
+            if (transposition.containsKey(zob % transpSize)) // TT-move ordering : third highest
+                return 1;
+            else
+                return 0;
         }
+        else // victim/attacker capture : second highest
+            return vic_atk_val[pieceIndex.get(vic)][pieceIndex.get(atk)];
     }
-
-    public static void quickSort(List<Move> moveList, String fen, int begin, int end) {
-        if (begin < end) {
-            int partitionIndex = partition(moveList, fen, begin, end);
-
-            quickSort(moveList, fen, begin, partitionIndex - 1);
-            quickSort(moveList, fen, partitionIndex + 1, end);
-        }
-    }
-
-    private static int partition(List<Move> moveList, String fen, int begin, int end) {
-        Move pivot = moveList.get(end);
-        int i = (begin - 1);
-
-        for (int j = begin; j < end; j++) {
-            if (moveValue(moveList.get(j), fen) >= moveValue(pivot, fen)) {
-                i++;
-
-                Move swapTemp = moveList.get(i);
-                moveList.set(i, moveList.get(j));
-                moveList.set(j, swapTemp);
-            }
-        }
-
-        Move swapTemp = moveList.get(i + 1);
-        moveList.set(i + 1, moveList.get(end));
-        moveList.set(end, swapTemp);
-
-        return i + 1;
-    }
-
 }
