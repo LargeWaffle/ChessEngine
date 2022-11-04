@@ -11,6 +11,9 @@ public class Minimax {
 
     public static int transpSize = 100000;
 
+
+    public static double lowerBound = -10000.0, higherBound = 10000.0;
+
     public static Map<Character, Integer> values = new HashMap<>(Map.of(
             'Q', 9, 'R', 5, 'N', 3, 'B', 3, 'P', 1,
             'q', -9, 'r', -5, 'n', -3, 'b', -3, 'p', -1));
@@ -139,11 +142,16 @@ public class Minimax {
 
     public static Node minimax(Board board, int depth, double alpha, double beta, boolean max) {
 
+        long zKey = board.getZobristKey();
+        boolean draw = board.isDraw();
+        boolean mated = board.isMated();
+        boolean terminal = draw || mated;
+
         cpt++;
 
-        if (transposition.containsKey(board.getZobristKey() % transpSize)) {
-            HashEntry rec = transposition.get(board.getZobristKey() % transpSize);
-            if (rec.zobrist == board.getZobristKey()) {
+        if (transposition.containsKey(zKey % transpSize)) {
+            HashEntry rec = transposition.get(zKey % transpSize);
+            if (rec.zobrist == zKey) {
                 if (rec.depth >= depth) {
                     if (rec.flag == 0)
                         return rec.node;
@@ -155,26 +163,25 @@ public class Minimax {
             }
         }
 
-        boolean terminal = board.isDraw() || board.isMated();
+        // generate children
+        List<Move> moveList = board.legalMoves();
 
         if (depth == 0 || terminal)
-            return new Node(null, evaluate(board, max));
+            return new Node(null, evaluate(board, max, board.gamePhase, draw, mated, moveList.size()));
 
-        Move bestMove = board.legalMoves().get(0);
+        // order the list by capturing moves first to maximize alpha beta cutoff
+        moveList.sort(Comparator.comparingInt((Move m) ->
+                (int) moveValue(board.getPiece(m.getTo()).getPieceType(), board.getPiece(m.getFrom()).getPieceType(), zKey)));
+        Collections.reverse(moveList);
+
+        Move bestMove = moveList.get(0);
+
         if (max) {
 
             int hashf = 1;
             double maxEval = -Double.MAX_VALUE;
 
-            // generate children
-            List<Move> moveList = board.legalMoves();
-
-            // order the list by capturing moves first to maximize alpha beta cutoff
-            moveList.sort(Comparator.comparingInt((Move m) -> (int) moveValue(m, board.getFen())));
-            Collections.reverse(moveList);
-
             for (Move move : moveList) {
-
                 board.doMove(move);
                 double value = minimax(board, depth - 1, alpha, beta, false).score;
                 board.undoMove();
@@ -192,7 +199,7 @@ public class Minimax {
             }
 
             Node node = new Node(bestMove, maxEval);
-            transposition.put(board.getZobristKey() % transpSize, new HashEntry(board.getZobristKey(), depth, hashf, node));
+            transposition.put(zKey % transpSize, new HashEntry(zKey, depth, hashf, node));
             return node;
 
         } else {
@@ -200,10 +207,7 @@ public class Minimax {
             int hashf = 2;
             double minEval = Double.MAX_VALUE;
 
-            List<Move> moveList = board.legalMoves();
-
             for (Move move : moveList) {
-
                 board.doMove(move);
                 double value = minimax(board, depth - 1, alpha, beta, true).score;
                 board.undoMove();
@@ -222,37 +226,35 @@ public class Minimax {
             }
 
             Node node = new Node(bestMove, minEval);
-            transposition.put(board.getZobristKey() % transpSize, new HashEntry(board.getZobristKey(), depth, hashf, node));
+            transposition.put(zKey % transpSize, new HashEntry(zKey, depth, hashf, node));
             return node;
         }
     }
 
-    public static double evaluate(Board board, boolean max) {
+    public static double evaluate(Board board, boolean max, int phase, boolean draw, boolean mated, int playingMoveSize) {
 
         // EDGE CASES
-        double lowerBound = -10000.0, higherBound = 10000.0;
-
         double score = 0.0, materialScore = 0.0, controlScore = 0.0, mobilityScore = 0.0;
 
-        if (board.isMated())
+        if (mated)
             return max ? lowerBound : higherBound;
 
-        if (board.isDraw())
+        if (draw)
             return 0.0;
 
         int matW = 0, contW = 0, mobW = 0;
         // BOARD ANALYSIS
-        if (board.gamePhase == 0) { // opening phase
+        if (phase == 0) { // opening phase
             matW = 1;
             contW = 40;
             mobW = 2;
         }
-        else if (board.gamePhase == 1) { // middle phase
+        else if (phase == 1) { // middle phase
             matW = 1;
             contW = 40;
             mobW = 10;
         }
-        else if (board.gamePhase == 2) { // end phase
+        else if (phase == 2) { // end phase
             matW = 1;
             contW = 10;
             mobW = 2;
@@ -263,10 +265,11 @@ public class Minimax {
         for (int i = 0; i < 64; i++) {
             if (((1L << i) & bboard) != 0L) {
                 Piece p = board.getPiece(Square.squareAt(i));
+                PieceType type = p.getPieceType();
                 if (p.getPieceSide() == Side.WHITE)
-                    materialScore += pieceValues.get(p.getPieceType()) + (board.gamePhase == 1 ? midgamePST.get(p.getPieceType()).get(i) : endgamePST.get(p.getPieceType()).get(i));
+                    materialScore += pieceValues.get(type) + (phase == 1 ? midgamePST.get(type).get(i) : endgamePST.get(type).get(i));
                 else
-                    materialScore -= pieceValues.get(p.getPieceType()) - (board.gamePhase == 1 ? midgamePST.get(p.getPieceType()).get(63-i) : endgamePST.get(p.getPieceType()).get(63-i));
+                    materialScore -= pieceValues.get(type) - (phase == 1 ? midgamePST.get(type).get(63-i) : endgamePST.get(type).get(63-i));
             }
         }
 
@@ -291,7 +294,10 @@ public class Minimax {
 
         // Mobility evaluation
         // w à 10 trop pour start : il yonk sa dame vers l'avant comme un dégénéré
-        mobilityScore += MoveGenerator.getLegalMovesSize(board, Side.WHITE) - MoveGenerator.getLegalMovesSize(board, Side.BLACK);
+        if (max)
+            mobilityScore += playingMoveSize - MoveGenerator.getLegalMovesSize(board, Side.BLACK);
+        else
+            mobilityScore += MoveGenerator.getLegalMovesSize(board, Side.WHITE) - playingMoveSize;
 
         // Tapered evaluation
         score = matW * materialScore + contW * controlScore + mobW * mobilityScore;
@@ -301,22 +307,15 @@ public class Minimax {
         return score;
     }
 
-    public static float moveValue(Move move, String fen) {
+    public static float moveValue(PieceType vic, PieceType atk, long zob) {
 
-        Board simBoard = new Board();
-        simBoard.loadFromFen(fen);
-        PieceType vic = simBoard.getPiece(move.getTo()).getPieceType();
-        simBoard.doMove(move);
-        if (simBoard.isMated()) // Mate : highest
-            return 80;
-        if (vic == null)
-            if (transposition.containsKey(simBoard.getZobristKey() % transpSize)) // TT-move ordering : third highest
+        if (vic == null) {
+            if (transposition.containsKey(zob % transpSize)) // TT-move ordering : third highest
                 return 1;
             else
                 return 0;
-        else { // victim/attacker capture : second highest
-            simBoard.undoMove();
-            return vic_atk_val[pieceIndex.get(vic)][pieceIndex.get(simBoard.getPiece(move.getFrom()).getPieceType())];
         }
+        else // victim/attacker capture : second highest
+            return vic_atk_val[pieceIndex.get(vic)][pieceIndex.get(atk)];
     }
 }
