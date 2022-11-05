@@ -12,8 +12,6 @@ import static java.lang.Long.bitCount;
 public class Minimax {
 
     public static int transpSize = 100000;
-
-
     public static double lowerBound = -10000.0, higherBound = 10000.0;
 
     public static Map<Character, Integer> values = new HashMap<>(Map.of(
