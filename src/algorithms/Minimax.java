@@ -29,8 +29,6 @@ public class Minimax {
             {10, 11, 12, 13, 14, 15, 0}, // victim P, attacker K, Q, R, B, N, P, None
             {0, 0, 0, 0, 0, 0, 0},      // no victim
     };
-    public static Map<Character, Double> toto_values = new HashMap<>(Map.of(
-            'K', 200.0, 'Q', 9.0, 'R', 5.0, 'N', 3.0, 'B', 3.0, 'P', 1.0));
     public static Map<PieceType, Integer> pieceValues = new HashMap<>(Map.of(
             PieceType.KING, 20000,
             PieceType.QUEEN, 900,
@@ -251,28 +249,33 @@ public class Minimax {
             matW = 1;
             contW = 40;
             mobW = 2;
-            pawnW = 10;
+            pawnW = 5;
         } else if (phase == 1) { // middle phase
             matW = 1;
             contW = 40;
             mobW = 10;
-            pawnW = 5;
+            pawnW = 10;
         } else if (phase == 2) { // end phase
             matW = 1;
             contW = 10;
             mobW = 2;
-            pawnW = 1;
+            pawnW = 15;
         }
 
         // Material evaluation
         long bboard = board.getBitboard();
 
         int w_doubled = 0, b_doubled = 0, w_blocked = 0, b_blocked = 0, w_isolated = 0, b_isolated = 0;
-
+        int sq, p_d, p_b, p_i;
         long copyBoard = bboard;
 
         while (copyBoard != 0L) {
-            int sq = bitScanForward(copyBoard);
+
+            p_d = 0;
+            p_b = 0;
+            p_i = 0;
+
+            sq = bitScanForward(copyBoard);
             copyBoard = extractLsb(copyBoard);
 
             Square currentSquare = Square.squareAt(sq);
@@ -288,32 +291,36 @@ public class Minimax {
 
             if (frontIndex >= 0 && frontIndex < 64) {
                 if (frontPiece == controlPiece)
-                    if (pieceSideWhite)
-                        w_doubled++;
-                    else
-                        b_doubled--;
+                    p_d++;
 
                 if (frontPiece != Piece.NONE)
-                    if (pieceSideWhite)
-                        w_blocked++;
-                    else
-                        b_blocked--;
+                    p_b++;
             }
 
             boolean isIsolated = true;
 
-            for (Square square : sideSquares)
-                if (board.getPiece(square) == controlPiece)
+            for (Square square : sideSquares) {
+                if (board.getPiece(square) == controlPiece) {
                     isIsolated = false;
+                    break;
+                }
+            }
 
             if (isIsolated)
-                if (pieceSideWhite)
-                    w_isolated++;
-                else
-                    b_isolated--;
+                p_i++;
+
+            if (pieceSideWhite) {
+                w_doubled = p_d;
+                w_blocked = p_b;
+                w_isolated = p_i;
+            } else {
+                b_doubled = p_d;
+                b_blocked = p_b;
+                b_isolated = p_i;
+            }
         }
 
-        pawnScore = w_doubled + b_doubled + w_blocked + b_blocked + w_isolated + b_isolated;
+        pawnScore = w_doubled - b_doubled + w_blocked - b_blocked + w_isolated - b_isolated;
 
         for (int i = 0; i < 64; i++) {
             if (((1L << i) & bboard) != 0L) {
@@ -344,7 +351,7 @@ public class Minimax {
             mobilityScore += MoveGenerator.getLegalMovesSize(board, Side.WHITE) - playingMoveSize;
 
         // Tapered evaluation
-        score = matW * materialScore + contW * controlScore + mobW * mobilityScore + pawnW * pawnScore;
+        score = matW * materialScore + contW * controlScore + mobW * mobilityScore - pawnW * pawnScore;
 
         // scale between lowerBound and higherBound
         score = (score - lowerBound) / (higherBound - lowerBound);
