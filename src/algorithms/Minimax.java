@@ -11,8 +11,7 @@ import static java.lang.Long.bitCount;
 
 public class Minimax {
 
-    public static int transpSize = 100000;
-    public static double lowerBound = -10000.0, higherBound = 10000.0;
+    public static int transpSize = 128000;
 
     public static Map<Character, Integer> values = new HashMap<>(Map.of(
             'Q', 9, 'R', 5, 'N', 3, 'B', 3, 'P', 1,
@@ -47,7 +46,8 @@ public class Minimax {
 
     public static Map<Long, HashEntry> transposition = new HashMap<>(transpSize);
     public static double cpt = 0;
-
+    public static double lowerBound = pieceValues.get(PieceType.KING) - 10 * pieceValues.get(PieceType.QUEEN);
+    public static double higherBound = pieceValues.get(PieceType.KING) + 10 * pieceValues.get(PieceType.QUEEN);
     public static List<Integer> pawnTable = Arrays.asList(
             0, 0, 0, 0, 0, 0, 0, 0,
             50, 50, 50, 50, 50, 50, 50, 50,
@@ -57,7 +57,6 @@ public class Minimax {
             5, -5, -10, 0, 0, -10, -5, 5,
             5, 10, 10, -20, -20, 10, 10, 5,
             0, 0, 0, 0, 0, 0, 0, 0);
-
     public static List<Integer> knightTable = Arrays.asList(
             -50, -40, -30, -30, -30, -30, -40, -50,
             -40, -20, 0, 0, 0, 0, -20, -40,
@@ -184,13 +183,13 @@ public class Minimax {
                 double value = minimax(board, depth - 1, alpha, beta, false).score;
                 board.undoMove();
 
+                if (value == higherBound)
+                    value += depth;
+
                 if (value > maxEval) {
                     hashf = 0;
                     maxEval = value;
                     bestMove = move;
-
-                    if (maxEval == higherBound)
-                        maxEval += depth;
                 }
 
                 alpha = Math.max(alpha, maxEval);
@@ -213,13 +212,13 @@ public class Minimax {
                 double value = minimax(board, depth - 1, alpha, beta, true).score;
                 board.undoMove();
 
+                if (value == lowerBound)
+                    value -= depth;
+
                 if (value < minEval) {
                     hashf = 0;
                     minEval = value;
                     bestMove = move;
-
-                    if (minEval == lowerBound)
-                        minEval -= depth;
                 }
 
                 beta = Math.min(beta, minEval);
@@ -244,7 +243,7 @@ public class Minimax {
             return max ? lowerBound : higherBound;
 
         if (draw)
-            return 0.0;
+            return max ? lowerBound / 100 : higherBound / 100;
 
         int matW = 0, contW = 0, mobW = 0, pawnW = 0;
 
@@ -258,12 +257,12 @@ public class Minimax {
             matW = 1;
             contW = 10;
             mobW = 5;
-            pawnW = 2;
+            pawnW = 5;
         } else if (phase == 2) { // end phase
             matW = 1;
             contW = 10;
             mobW = 2;
-            pawnW = 2;
+            pawnW = 10;
         }
 
         // Material evaluation
