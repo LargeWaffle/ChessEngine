@@ -190,7 +190,7 @@ public class Minimax {
                     bestMove = move;
 
                     if (maxEval == higherBound)
-                        break;
+                        maxEval += depth;
                 }
 
                 alpha = Math.max(alpha, maxEval);
@@ -219,7 +219,7 @@ public class Minimax {
                     bestMove = move;
 
                     if (minEval == lowerBound)
-                        break;
+                        minEval -= depth;
                 }
 
                 beta = Math.min(beta, minEval);
