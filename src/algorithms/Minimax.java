@@ -188,6 +188,9 @@ public class Minimax {
                     hashf = 0;
                     maxEval = value;
                     bestMove = move;
+
+                    if (maxEval == higherBound)
+                        break;
                 }
 
                 alpha = Math.max(alpha, maxEval);
@@ -214,6 +217,9 @@ public class Minimax {
                     hashf = 0;
                     minEval = value;
                     bestMove = move;
+
+                    if (minEval == lowerBound)
+                        break;
                 }
 
                 beta = Math.min(beta, minEval);
@@ -245,19 +251,19 @@ public class Minimax {
         // BOARD ANALYSIS
         if (phase == 0) { // opening phase
             matW = 1;
-            contW = 40;
+            contW = 10;
             mobW = 2;
-            pawnW = 5;
+            pawnW = 2;
         } else if (phase == 1) { // middle phase
             matW = 1;
-            contW = 40;
-            mobW = 10;
-            pawnW = 10;
+            contW = 10;
+            mobW = 5;
+            pawnW = 2;
         } else if (phase == 2) { // end phase
             matW = 1;
             contW = 10;
             mobW = 2;
-            pawnW = 15;
+            pawnW = 2;
         }
 
         // Material evaluation
