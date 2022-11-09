@@ -142,9 +142,9 @@ public class Board implements Cloneable, BoardEvent {
             if (isUpperCase(fc) || isLowerCase(fc))
                 nbPieces++;
             if (nbPieces == 6) // if there are 6 or more pieces left
-                return true;
+                return false;
         }
-        return false;
+        return true;
     }
 
     public void updateGamePhase(int phase) {

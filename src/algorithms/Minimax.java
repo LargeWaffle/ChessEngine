@@ -10,6 +10,7 @@ public class Minimax {
 
     public static int transpSize = 100000;
 
+    public static String[] whiteOpen = {"g1f3", "c2c4", "g2g3", "f1g2", "e1g1"};
 
     public static double lowerBound = -10000.0, higherBound = 10000.0;
 
@@ -49,7 +50,17 @@ public class Minimax {
     public static Map<Long, HashEntry> transposition = new HashMap<>(transpSize);
     public static double cpt = 0;
 
-    public static List<Integer> pawnTable = Arrays.asList(
+    public static List<Integer> pawnMiddleTable = Arrays.asList(
+            0,  0,  0,  0,  0,  0,  0,  0,
+            0,  0,  0,  0,  0,  0,  0,  0,
+            0,  0,  0,  0,  0,  0,  0,  0,
+            5,  5, 10, 25, 25, 10,  5,  5,
+            0,  0,  0, 20, 20,  0,  0,  0,
+            5, -5,-10,  0,  0,-10, -5,  5,
+            5, 10, 10,-20,-20, 10, 10,  5,
+            0,  0,  0,  0,  0,  0,  0,  0);
+
+    public static List<Integer> pawnEndingTable = Arrays.asList(
             0,  0,  0,  0,  0,  0,  0,  0,
             50, 50, 50, 50, 50, 50, 50, 50,
             10, 10, 20, 30, 30, 20, 10, 10,
@@ -59,7 +70,7 @@ public class Minimax {
             5, 10, 10,-20,-20, 10, 10,  5,
             0,  0,  0,  0,  0,  0,  0,  0);
 
-    public static List<Integer> knightTable = Arrays.asList(
+    public static List<Integer> knightMiddleTable = Arrays.asList(
             -50,-40,-30,-30,-30,-30,-40,-50,
             -40,-20,  0,  0,  0,  0,-20,-40,
             -30,  0, 10, 15, 15, 10,  0,-30,
@@ -69,7 +80,17 @@ public class Minimax {
             -40,-20,  0,  5,  5,  0,-20,-40,
             -50,-40,-30,-30,-30,-30,-40,-50);
 
-    public static List<Integer> bishopTable = Arrays.asList(
+    public static List<Integer> knightEndingTable = Arrays.asList(
+            0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0);
+
+    public static List<Integer> bishopMiddleTable = Arrays.asList(
             -20,-10,-10,-10,-10,-10,-10,-20,
             -10,  0,  0,  0,  0,  0,  0,-10,
             -10,  0,  5, 10, 10,  5,  0,-10,
@@ -79,7 +100,17 @@ public class Minimax {
             -10,  5,  0,  0,  0,  0,  5,-10,
             -20,-10,-10,-10,-10,-10,-10,-20);
 
-    public static List<Integer> rookTable = Arrays.asList(
+    public static List<Integer> bishopEndingTable = Arrays.asList(
+            0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0);
+
+    public static List<Integer> rookMiddleTable = Arrays.asList(
             0,  0,  0,  0,  0,  0,  0,  0,
             5, 10, 10, 10, 10, 10, 10,  5,
             -5,  0,  0,  0,  0,  0,  0, -5,
@@ -89,7 +120,17 @@ public class Minimax {
             -5,  0,  0,  0,  0,  0,  0, -5,
             0,  0,  0,  5,  5,  0,  0,  0);
 
-    public static List<Integer> queenTable = Arrays.asList(
+    public static List<Integer> rookEndingTable = Arrays.asList(
+            0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0);
+
+    public static List<Integer> queenMiddleTable = Arrays.asList(
             -20,-10,-10, -5, -5,-10,-10,-20,
             -10,  0,  0,  0,  0,  0,  0,-10,
             -10,  0,  5,  5,  5,  5,  0,-10,
@@ -98,6 +139,16 @@ public class Minimax {
             -10,  5,  5,  5,  5,  5,  0,-10,
             -10,  0,  5,  0,  0,  0,  0,-10,
             -20,-10,-10, -5, -5,-10,-10,-20);
+
+    public static List<Integer> queenEndingTable = Arrays.asList(
+            0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0);
 
     public static List<Integer> kingMiddleTable = Arrays.asList(
             -20,-10,-10, -5, -5,-10,-10,-20,
@@ -120,19 +171,19 @@ public class Minimax {
             -50,-30,-30,-30,-30,-30,-30,-50);
 
     public static Map<PieceType, List<Integer>> midgamePST = new HashMap<>(Map.of(
-            PieceType.PAWN, pawnTable,
-            PieceType.KNIGHT, knightTable,
-            PieceType.BISHOP, bishopTable,
-            PieceType.ROOK, rookTable,
-            PieceType.QUEEN, queenTable,
+            PieceType.PAWN, pawnMiddleTable,
+            PieceType.KNIGHT, knightMiddleTable,
+            PieceType.BISHOP, bishopMiddleTable,
+            PieceType.ROOK, rookMiddleTable,
+            PieceType.QUEEN, queenMiddleTable,
             PieceType.KING, kingMiddleTable));
 
     public static Map<PieceType, List<Integer>> endgamePST = new HashMap<>(Map.of(
-            PieceType.PAWN, pawnTable,
-            PieceType.KNIGHT, knightTable,
-            PieceType.BISHOP, bishopTable,
-            PieceType.ROOK, rookTable,
-            PieceType.QUEEN, queenTable,
+            PieceType.PAWN, pawnEndingTable,
+            PieceType.KNIGHT, knightEndingTable,
+            PieceType.BISHOP, bishopEndingTable,
+            PieceType.ROOK, rookEndingTable,
+            PieceType.QUEEN, queenEndingTable,
             PieceType.KING, kingEndingTable));
 
     public Minimax() {
@@ -181,6 +232,7 @@ public class Minimax {
             double maxEval = -Double.MAX_VALUE;
 
             for (Move move : moveList) {
+
                 board.doMove(move);
                 double value = minimax(board, depth - 1, alpha, beta, false).score;
                 board.undoMove();
@@ -207,6 +259,7 @@ public class Minimax {
             double minEval = Double.MAX_VALUE;
 
             for (Move move : moveList) {
+
                 board.doMove(move);
                 double value = minimax(board, depth - 1, alpha, beta, true).score;
                 board.undoMove();

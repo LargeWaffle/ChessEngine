@@ -1,7 +1,9 @@
 import algorithms.Minimax;
 import algorithms.Node;
 import chesslib.Board;
+import chesslib.Piece;
 import chesslib.Side;
+import chesslib.Square;
 import chesslib.move.*;
 
 import java.util.*;
@@ -73,19 +75,41 @@ public class UCI {
 
     public static void inputGo() {
 
-        if (board.getMoveCounter() == 10 || board.getMoveCounter() == 11) { // transition to middle phase
+        if (board.gamePhase != 1 && board.getMoveCounter() == 6) { // transition to middle phase
             board.updateGamePhase(1);
         }
         if (board.isSetEndPhase()) { // transition to end phase
             board.updateGamePhase(2);
         }
-        boolean isMax = board.getSideToMove() == Side.WHITE;
-        long start = System.currentTimeMillis();
-        Node bestNode = Minimax.minimax(board, 5, -Double.MAX_VALUE, Double.MAX_VALUE, isMax);
-        System.out.println(System.currentTimeMillis() - start);
-        System.out.println("Nodes explored " + Minimax.cpt);
-        System.out.println("bestmove " + bestNode.move);
-        Minimax.cpt = 0;
+
+        if (board.gamePhase == 0) {
+
+            if (board.getMoveCounter() != 2) {
+                System.out.println("bestmove " + Minimax.whiteOpen[board.getMoveCounter()-1]);
+            } else {
+                boolean hasPiece = false;
+                for (Square sq : new Square[]{Square.E5, Square.G5}) {
+                    if (board.getPiece(sq) != Piece.NONE)
+                        hasPiece = true;
+                }
+                if (!hasPiece) {
+                    System.out.println("bestmove " + Minimax.whiteOpen[board.getMoveCounter()-1]);
+                } else { // GERE LE CAS OU L'AUTRE DONNE PIECE
+                    board.updateGamePhase(1);
+                    inputGo();
+                }
+            }
+
+        }
+        else {
+            boolean isMax = board.getSideToMove() == Side.WHITE;
+            long start = System.currentTimeMillis();
+            Node bestNode = Minimax.minimax(board, 5, -Double.MAX_VALUE, Double.MAX_VALUE, isMax);
+            System.out.println(System.currentTimeMillis() - start);
+            System.out.println("Nodes explored " + Minimax.cpt);
+            System.out.println("bestmove " + bestNode.move);
+            Minimax.cpt = 0;
+        }
     }
 
     public static void inputQuit() {
