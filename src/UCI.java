@@ -8,10 +8,13 @@ import java.util.*;
 
 public class UCI {
     static Board board = new Board();
-
+    static Minimax minimax;
     static String ENGINENAME = "Tomart1";
 
-    public static void uciCommunication() {
+    public static void uciCommunication() throws Exception {
+
+        minimax = new Minimax();
+
         Scanner input = new Scanner(System.in);
         while (true) {
             String inputString = input.nextLine();
@@ -85,12 +88,12 @@ public class UCI {
         boolean isMax = board.getSideToMove() == Side.WHITE;
         long start = System.currentTimeMillis();
 
-        Node bestNode = Minimax.minimax(board, depth, -Double.MAX_VALUE, Double.MAX_VALUE, isMax);
+        Node bestNode = minimax.minimax(board, depth, -Double.MAX_VALUE, Double.MAX_VALUE, isMax);
 
         System.out.println(System.currentTimeMillis() - start);
-        System.out.println("Nodes explored " + Minimax.cpt);
+        System.out.println("Nodes explored " + minimax.cpt);
         System.out.println("bestmove " + bestNode.move);
-        Minimax.cpt = 0;
+        minimax.cpt = 0;
     }
 
     public static void inputQuit() {
