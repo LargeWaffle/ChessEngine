@@ -10,8 +10,6 @@ public class Minimax {
 
     public static int transpSize = 100000;
 
-    public static String[] whiteOpen = {"g1f3", "c2c4", "g2g3", "f1g2", "e1g1"};
-
     public static double lowerBound = -10000.0, higherBound = 10000.0;
 
     public static Map<Character, Integer> values = new HashMap<>(Map.of(

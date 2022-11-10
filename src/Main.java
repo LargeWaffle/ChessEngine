@@ -1,4 +1,5 @@
 import algorithms.Minimax;
+import algorithms.StartTree;
 import chesslib.Board;
 import chesslib.move.Move;
 
@@ -6,6 +7,7 @@ import java.util.List;
 
 public class Main {
     public static void main(String[] args) throws InterruptedException {
+        StartTree st = new StartTree();
         UCI uci = new UCI();
         UCI.uciCommunication();
         /*Board board = new Board();
