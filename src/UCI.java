@@ -1,13 +1,20 @@
 import algorithms.Minimax;
 import algorithms.Node;
 import chesslib.Board;
+import chesslib.Piece;
 import chesslib.Side;
+import chesslib.Square;
 import chesslib.move.*;
 
+import algorithms.StartTree;
 import java.util.*;
 
 public class UCI {
     static Board board = new Board();
+
+    public static String[] whiteOpen = {"g1f3", "c2c4", "g2g3", "f1g2", "e1g1"};
+
+    public static String moves = "";
     static String ENGINENAME = "Tomart1";
 
     public static void uciCommunication() {
@@ -66,6 +73,7 @@ public class UCI {
         }
         if (input.contains("moves")) {
             input = input.substring(input.indexOf("moves") + 6);
+            moves = input;
             MoveList list = new MoveList();
             list.loadFromSan(input);
             board.loadFromFen(list.getFen());
@@ -74,8 +82,7 @@ public class UCI {
 
     public static void inputGo() {
 
-        int depth = 5;
-        if (board.getMoveCounter() == 10 || board.getMoveCounter() == 11) { // transition to middle phase
+        if (board.gamePhase != 1 && board.getMoveCounter() == 6) { // transition to middle phase
             board.updateGamePhase(1);
         }
 
@@ -83,15 +90,47 @@ public class UCI {
             board.updateGamePhase(2);
             depth = 7;
         }
-        boolean isMax = board.getSideToMove() == Side.WHITE;
-        long start = System.currentTimeMillis();
 
-        Node bestNode = Minimax.minimax(board, depth, -Double.MAX_VALUE, Double.MAX_VALUE, isMax);
+        if (board.gamePhase == 0) {
+            if (board.getSideToMove() == Side.WHITE) {
+                if (board.getMoveCounter() != 2) {
+                    System.out.println("bestmove " + whiteOpen[board.getMoveCounter()-1]);
+                } else {
+                    boolean hasPiece = false;
+                    for (Square sq : new Square[]{Square.E5, Square.G5}) {
+                        if (board.getPiece(sq) != Piece.NONE)
+                            hasPiece = true;
+                    }
+                    if (!hasPiece) {
+                        System.out.println("bestmove " + whiteOpen[board.getMoveCounter()-1]);
+                    } else { // GERE LE CAS OU L'AUTRE DONNE PIECE
+                        board.updateGamePhase(1);
+                        inputGo();
+                    }
+                }
+            } else {
+                List<String> mlist = List.of(moves.split(" "));
+                StartTree.search(StartTree.tree, mlist);
+                if (StartTree.tree_move == null) { // GERE LE CAS OU L'AUTRE DONNE PIECE
+                    board.updateGamePhase(1);
+                    inputGo();
+                } else
+                    System.out.println("bestmove " + StartTree.tree_move);
 
-        System.out.println(System.currentTimeMillis() - start);
-        System.out.println("Nodes explored " + Minimax.cpt);
-        System.out.println("bestmove " + bestNode.move);
-        Minimax.cpt = 0;
+                if (StartTree.phase1)
+                    board.updateGamePhase(1);
+            }
+
+        }
+        else {
+            boolean isMax = board.getSideToMove() == Side.WHITE;
+            long start = System.currentTimeMillis();
+            Node bestNode = Minimax.minimax(board, 5, -Double.MAX_VALUE, Double.MAX_VALUE, isMax);
+            System.out.println(System.currentTimeMillis() - start);
+            System.out.println("Nodes explored " + Minimax.cpt);
+            System.out.println("bestmove " + bestNode.move);
+            Minimax.cpt = 0;
+        }
     }
 
     public static void inputQuit() {

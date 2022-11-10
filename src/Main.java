@@ -1,4 +1,5 @@
 import algorithms.Minimax;
+import algorithms.StartTree;
 import chesslib.Board;
 import chesslib.move.Move;
 
