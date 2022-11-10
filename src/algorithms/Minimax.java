@@ -314,8 +314,8 @@ public class Minimax {
             pawnW = 5;
         } else if (phase == 2) { // end phase
             matW = 1;
-            contW = 10;
-            mobW = 2;
+            contW = 0;
+            mobW = 0;
             pawnW = 10;
         }
 
@@ -367,13 +367,13 @@ public class Minimax {
                 p_i++;
 
             if (pieceSideWhite) {
-                w_doubled = p_d;
-                w_blocked = p_b;
-                w_isolated = p_i;
+                w_doubled += p_d;
+                w_blocked += p_b;
+                w_isolated += p_i;
             } else {
-                b_doubled = p_d;
-                b_blocked = p_b;
-                b_isolated = p_i;
+                b_doubled += p_d;
+                b_blocked += p_b;
+                b_isolated += p_i;
             }
         }
 
@@ -418,9 +418,9 @@ public class Minimax {
     public static float moveValue(PieceType vic, PieceType atk, long zob) {
 
         if (vic == null) {
-            if (transposition.containsKey(zob % transpSize)) // TT-move ordering : third highest
+            /*if (transposition.containsKey(zob % transpSize)) // TT-move ordering : third highest
                 return 1;
-            else
+            else*/
                 return 0;
         } else // victim/attacker capture : second highest
             return vic_atk_val[pieceIndex.get(vic)][pieceIndex.get(atk)];

@@ -17,6 +17,8 @@ public class UCI {
     public static String moves = "";
     static String ENGINENAME = "Tomart1";
 
+    public static StartTree st = new StartTree();
+
     public static void uciCommunication() {
 
         Scanner input = new Scanner(System.in);
@@ -88,7 +90,6 @@ public class UCI {
 
         if (board.isSetEndPhase()) { // transition to end phase
             board.updateGamePhase(2);
-            depth = 7;
         }
 
         if (board.gamePhase == 0) {
@@ -110,14 +111,14 @@ public class UCI {
                 }
             } else {
                 List<String> mlist = List.of(moves.split(" "));
-                StartTree.search(StartTree.tree, mlist);
-                if (StartTree.tree_move == null) { // GERE LE CAS OU L'AUTRE DONNE PIECE
+                st.search(StartTree.tree, mlist);
+                if (st.tree_move == null) { // GERE LE CAS OU L'AUTRE DONNE PIECE
                     board.updateGamePhase(1);
                     inputGo();
                 } else
-                    System.out.println("bestmove " + StartTree.tree_move);
+                    System.out.println("bestmove " + st.tree_move);
 
-                if (StartTree.phase1)
+                if (st.phase1)
                     board.updateGamePhase(1);
             }
 

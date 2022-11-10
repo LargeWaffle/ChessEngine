@@ -174,15 +174,19 @@ public class StartTree {
         tree_move = null;
         String mv = movelist.get(0);
         List<String> new_mlist = movelist.subList(1, movelist.size());
-        for (treeNode child : node.children) {
-            if (Objects.equals(mv, child.move)) {
-                if (new_mlist.size() == 0) {
-                    tree_move = child.children.get(0).move;
-                    if (child.children.get(0).children == null)
-                        phase1 = true;
+        if (node.children == null)
+            phase1 = true;
+        else {
+            for (treeNode child : node.children) {
+                if (Objects.equals(mv, child.move)) {
+                    if (new_mlist.size() == 0) {
+                        tree_move = child.children.get(0).move;
+                        if (child.children.get(0).children == null)
+                            phase1 = true;
+                    }
+                    else
+                        search(child, new_mlist);
                 }
-                else
-                    search(child, new_mlist);
             }
         }
     }
