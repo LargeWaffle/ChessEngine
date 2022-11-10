@@ -7,6 +7,7 @@ import chesslib.Square;
 import chesslib.move.*;
 
 import algorithms.StartTree;
+
 import java.util.*;
 
 public class UCI {
@@ -95,7 +96,7 @@ public class UCI {
         if (board.gamePhase == 0) {
             if (board.getSideToMove() == Side.WHITE) {
                 if (board.getMoveCounter() != 2) {
-                    System.out.println("bestmove " + whiteOpen[board.getMoveCounter()-1]);
+                    System.out.println("bestmove " + whiteOpen[board.getMoveCounter() - 1]);
                 } else {
                     boolean hasPiece = false;
                     for (Square sq : new Square[]{Square.E5, Square.G5}) {
@@ -103,7 +104,7 @@ public class UCI {
                             hasPiece = true;
                     }
                     if (!hasPiece) {
-                        System.out.println("bestmove " + whiteOpen[board.getMoveCounter()-1]);
+                        System.out.println("bestmove " + whiteOpen[board.getMoveCounter() - 1]);
                     } else { // GERE LE CAS OU L'AUTRE DONNE PIECE
                         board.updateGamePhase(1);
                         inputGo();
@@ -122,8 +123,7 @@ public class UCI {
                     board.updateGamePhase(1);
             }
 
-        }
-        else {
+        } else {
             boolean isMax = board.getSideToMove() == Side.WHITE;
             long start = System.currentTimeMillis();
             Node bestNode = Minimax.minimax(board, 5, -Double.MAX_VALUE, Double.MAX_VALUE, isMax);
