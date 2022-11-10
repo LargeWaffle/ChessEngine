@@ -288,6 +288,8 @@ public class Minimax {
         }
     }
 
+
+
     public static double evaluate(Board board, boolean max, int phase, boolean draw, boolean mated, int playingMoveSize) {
 
         // EDGE CASES
@@ -313,10 +315,10 @@ public class Minimax {
             mobW = 5;
             pawnW = 5;
         } else if (phase == 2) { // end phase
-            matW = 1;
+            matW = 1000;
             contW = 0;
             mobW = 0;
-            pawnW = 10;
+            pawnW = 0;
         }
 
         // Material evaluation
@@ -401,7 +403,6 @@ public class Minimax {
         }
 
         // Mobility evaluation
-        // w à 10 trop pour start : il yonk sa dame vers l'avant comme un dégénéré
         if (max)
             mobilityScore += playingMoveSize - MoveGenerator.getLegalMovesSize(board, Side.BLACK);
         else

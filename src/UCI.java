@@ -12,6 +12,8 @@ import java.util.*;
 public class UCI {
     static Board board = new Board();
 
+    static boolean fromFen = false;
+
     public static String[] whiteOpen = {"g1f3", "c2c4", "g2g3", "f1g2", "e1g1"};
 
     public static String moves = "";
@@ -64,21 +66,38 @@ public class UCI {
     }
 
     public static void inputPosition(String input) {
+        String fen = "";
         input = input.substring(9).concat(" ");
 
         if (input.contains("startpos ")) {
             input = input.substring(9);
             board.loadFromFen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
+
         } else if (input.contains("fen")) {
             input = input.substring(4);
+            fen = input;
             board.loadFromFen(input);
+            fromFen = true;
         }
+
         if (input.contains("moves")) {
-            input = input.substring(input.indexOf("moves") + 6);
-            moves = input;
-            MoveList list = new MoveList();
-            list.loadFromSan(input);
-            board.loadFromFen(list.getFen());
+
+            if (fromFen) {
+                input = input.substring(input.indexOf("moves") + 6);
+                moves = input;
+                MoveList list = new MoveList(fen);
+                list.loadFromSan(input);
+                for (Move mv : list) {
+                    board.doMove(mv);
+                }
+            } else {
+                input = input.substring(input.indexOf("moves") + 6);
+                moves = input;
+                MoveList list = new MoveList();
+                list.loadFromSan(input);
+                board.loadFromFen(list.getFen());
+            }
+
         }
     }
 
@@ -91,39 +110,48 @@ public class UCI {
         if (board.isSetEndPhase()) { // transition to end phase
             board.updateGamePhase(2);
         }
-
-        if (board.gamePhase == 0) {
-            if (board.getSideToMove() == Side.WHITE) {
-                if (board.getMoveCounter() != 2) {
-                    System.out.println("bestmove " + whiteOpen[board.getMoveCounter()-1]);
-                } else {
-                    boolean hasPiece = false;
-                    for (Square sq : new Square[]{Square.E5, Square.G5}) {
-                        if (board.getPiece(sq) != Piece.NONE)
-                            hasPiece = true;
-                    }
-                    if (!hasPiece) {
+        if (!fromFen) {
+            if (board.gamePhase == 0) {
+                if (board.getSideToMove() == Side.WHITE) {
+                    if (board.getMoveCounter() != 2) {
                         System.out.println("bestmove " + whiteOpen[board.getMoveCounter()-1]);
-                    } else { // GERE LE CAS OU L'AUTRE DONNE PIECE
+                    } else {
+                        boolean hasPiece = false;
+                        for (Square sq : new Square[]{Square.E5, Square.G5}) {
+                            if (board.getPiece(sq) != Piece.NONE)
+                                hasPiece = true;
+                        }
+                        if (!hasPiece) {
+                            System.out.println("bestmove " + whiteOpen[board.getMoveCounter()-1]);
+                        } else { // GERE LE CAS OU L'AUTRE DONNE PIECE
+                            board.updateGamePhase(1);
+                            inputGo();
+                        }
+                    }
+                } else {
+                    List<String> mlist = List.of(moves.split(" "));
+                    st.search(StartTree.tree, mlist);
+                    if (st.tree_move == null) { // GERE LE CAS OU L'AUTRE DONNE PIECE
                         board.updateGamePhase(1);
                         inputGo();
-                    }
+                    } else
+                        System.out.println("bestmove " + st.tree_move);
+
+                    if (st.phase1)
+                        board.updateGamePhase(1);
                 }
-            } else {
-                List<String> mlist = List.of(moves.split(" "));
-                st.search(StartTree.tree, mlist);
-                if (st.tree_move == null) { // GERE LE CAS OU L'AUTRE DONNE PIECE
-                    board.updateGamePhase(1);
-                    inputGo();
-                } else
-                    System.out.println("bestmove " + st.tree_move);
 
-                if (st.phase1)
-                    board.updateGamePhase(1);
             }
-
-        }
-        else {
+            else {
+                boolean isMax = board.getSideToMove() == Side.WHITE;
+                long start = System.currentTimeMillis();
+                Node bestNode = Minimax.minimax(board, 5, -Double.MAX_VALUE, Double.MAX_VALUE, isMax);
+                System.out.println(System.currentTimeMillis() - start);
+                System.out.println("Nodes explored " + Minimax.cpt);
+                System.out.println("bestmove " + bestNode.move);
+                Minimax.cpt = 0;
+            }
+        } else {
             boolean isMax = board.getSideToMove() == Side.WHITE;
             long start = System.currentTimeMillis();
             Node bestNode = Minimax.minimax(board, 5, -Double.MAX_VALUE, Double.MAX_VALUE, isMax);

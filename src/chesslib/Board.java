@@ -130,12 +130,13 @@ public class Board implements Cloneable, BoardEvent {
 
         int nbPieces = 0;
 
-        char[] fen_char = this.getFen().toCharArray();
+        char[] fen_char = this.getFen().split(" ")[0].toCharArray();
 
         for (char fc : fen_char) {
             if (isUpperCase(fc) || isLowerCase(fc))
-                nbPieces++;
-            if (nbPieces == 6) // if there are 6 or more pieces left
+                if (fc != 'p' && fc != 'P')
+                    nbPieces++;
+            if (nbPieces == 8) // if there are 8 or more pieces left
                 return false;
         }
         return true;
