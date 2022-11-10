@@ -3,8 +3,6 @@ package algorithms;
 import chesslib.*;
 import chesslib.game.Game;
 import chesslib.move.*;
-import chesslib.pgn.PgnHolder;
-import chesslib.pgn.PgnIterator;
 
 import java.util.*;
 
@@ -13,9 +11,6 @@ import static chesslib.Bitboard.extractLsb;
 import static java.lang.Long.bitCount;
 
 public class Minimax {
-
-    public static Map<Integer, MoveList> books;
-
     public static int transpSize = 128000;
 
     public static Map<Character, Integer> values = new HashMap<>(Map.of(
@@ -138,20 +133,7 @@ public class Minimax {
             PieceType.QUEEN, queenTable,
             PieceType.KING, kingEndingTable));
 
-    public Minimax() throws Exception {
-
-        PgnIterator m_king_pgn = new PgnIterator("resources/modern_king.pgn");
-        PgnIterator c_king_pgn = new PgnIterator("resources/classic_king.pgn");
-        PgnIterator m_queen_pgn = new PgnIterator("resources/modern_queen.pgn");
-        PgnIterator c_queen_pgn = new PgnIterator("resources/classic_queen.pgn");
-
-        List<PgnIterator> pgns = Arrays.asList(m_king_pgn, c_king_pgn, m_queen_pgn, c_queen_pgn);
-
-        for (PgnIterator games : pgns) {
-            for (Game game : games) {
-                MoveList moves = game.getHalfMoves();
-            }
-        }
+    public Minimax() {
     }
 
     public static Node minimax(Board board, int depth, double alpha, double beta, boolean max) {

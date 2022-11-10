@@ -8,12 +8,9 @@ import java.util.*;
 
 public class UCI {
     static Board board = new Board();
-    static Minimax minimax;
     static String ENGINENAME = "Tomart1";
 
-    public static void uciCommunication() throws Exception {
-
-        minimax = new Minimax();
+    public static void uciCommunication() {
 
         Scanner input = new Scanner(System.in);
         while (true) {
@@ -59,6 +56,7 @@ public class UCI {
 
     public static void inputPosition(String input) {
         input = input.substring(9).concat(" ");
+
         if (input.contains("startpos ")) {
             input = input.substring(9);
             board.loadFromFen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
@@ -88,12 +86,12 @@ public class UCI {
         boolean isMax = board.getSideToMove() == Side.WHITE;
         long start = System.currentTimeMillis();
 
-        Node bestNode = minimax.minimax(board, depth, -Double.MAX_VALUE, Double.MAX_VALUE, isMax);
+        Node bestNode = Minimax.minimax(board, depth, -Double.MAX_VALUE, Double.MAX_VALUE, isMax);
 
         System.out.println(System.currentTimeMillis() - start);
-        System.out.println("Nodes explored " + minimax.cpt);
+        System.out.println("Nodes explored " + Minimax.cpt);
         System.out.println("bestmove " + bestNode.move);
-        minimax.cpt = 0;
+        Minimax.cpt = 0;
     }
 
     public static void inputQuit() {
