@@ -420,6 +420,16 @@ public class Board implements Cloneable, BoardEvent {
         return move;
     }
 
+    public boolean isLastMoveCapturing() {
+        Move move = undoMove();
+        if (move.getFrom() != Square.NONE) {
+            boolean b = !Piece.NONE.equals(getPiece(move.getTo()));
+            doMove(move);
+            return b;
+        } else
+            return false;
+    }
+
     /**
      * Moves a piece on the board and updates the backup passed in input. It returns the captured piece, if any, or
      * {@link Piece#NONE} otherwise.

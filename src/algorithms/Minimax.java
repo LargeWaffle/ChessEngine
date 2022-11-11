@@ -14,6 +14,8 @@ public class Minimax {
 
     public static int transpSize = 100000;
 
+    public static String theFEN = "3r4/P5n1/3p1PPk/4p3/P7/RPK3PN/3N3P/8 w - - 0 1";
+
     public static double lowerBound = -10000.0, higherBound = 10000.0;
 
     public static Map<Character, Integer> values = new HashMap<>(Map.of(
@@ -50,7 +52,6 @@ public class Minimax {
     public static Map<Long, HashEntry> transposition = new HashMap<>(transpSize);
     public static double cpt = 0;
     public static double cpt2 = 0;
-
     public static List<Integer> pawnMiddleTable = Arrays.asList(
             0, 0, 0, 0, 0, 0, 0, 0,
             0, 0, 0, 0, 0, 0, 0, 0,
@@ -190,7 +191,7 @@ public class Minimax {
     public Minimax() {
     }
 
-    public static Node minimax(Board board, int depth, double alpha, double beta, boolean max) {
+    public static Node minimax(Board board, int depth, double alpha, double beta, boolean max, boolean allowNull) {
 
         long zKey = board.getZobristKey();
         boolean draw = board.isDraw();
@@ -213,13 +214,26 @@ public class Minimax {
             }
         }
 
+        if (allowNull && depth > 3) {
+            if(!board.isKingAttacked()) {
+                board.doNullMove();
+                double eval = minimax(board, depth - 2 - 1, alpha, beta, !max, false).score;
+                board.undoMove();
+
+                if (eval >= beta)
+                    return new Node(null, eval);
+            }
+        }
+
         // generate children
         List<Move> moveList = board.legalMoves();
 
-        if (depth == 0 || terminal)
-            //return new Node(null, evaluate(board, max, board.gamePhase, draw, mated, moveList.size()));
-            return new Node(null, quiescenceSearch(15, alpha, beta, board, max, board.gamePhase, draw, mated, moveList.size()));
-        // if last move was capturing launch q if not just eval ?
+        if (depth <= 0 || terminal) {
+            if (board.isLastMoveCapturing()) // if last move was capturing launch qsearch
+                return new Node(null, quiescenceSearch(5, alpha, beta, board, max, board.gamePhase, draw, mated, moveList.size()));
+            else
+               return new Node(null, evaluate(board, max, board.gamePhase, draw, mated, moveList.size()));
+        }
 
         // order the list by capturing moves first to maximize alpha beta cutoff
         moveList.sort(Comparator.comparingInt((Move m) ->
@@ -229,14 +243,12 @@ public class Minimax {
         Move bestMove = moveList.get(0);
 
         if (max) {
-
             int hashf = 1;
             double maxEval = -Double.MAX_VALUE;
 
             for (Move move : moveList) {
-
                 board.doMove(move);
-                double value = minimax(board, depth - 1, alpha, beta, false).score;
+                double value = minimax(board, depth - 1, alpha, beta, false, true).score;
                 board.undoMove();
 
                 if (value == higherBound)
@@ -264,9 +276,8 @@ public class Minimax {
             double minEval = Double.MAX_VALUE;
 
             for (Move move : moveList) {
-
                 board.doMove(move);
-                double value = minimax(board, depth - 1, alpha, beta, true).score;
+                double value = minimax(board, depth - 1, alpha, beta, true, true).score;
                 board.undoMove();
 
                 if (value == lowerBound)
@@ -293,10 +304,10 @@ public class Minimax {
 
     public static double quiescenceSearch(int depth, double alpha, double beta, Board board, boolean max, int phase, boolean draw, boolean mated, int playingMoveSize) {
 
-        // add QS searches to TT
-        // null move pruning
-        // TRY TT here
         cpt2++;
+
+        // null move pruning
+
         double stand_pat = evaluate(board, max, phase, draw, mated, playingMoveSize);
 
         if (depth == 0)
@@ -305,20 +316,13 @@ public class Minimax {
         if (stand_pat >= beta)
             return beta;
 
-        double DELTA = 0.05; // delta cutoff
+        double DELTA = 0.02; // delta cutoff
 
         if (alpha < stand_pat)
             alpha = stand_pat;
 
-        // FIND BETTER WAY TO DO THAT (get psesudo and check if legal while making ?)
-        List<Move> moveList = board.legalMoves();
-        List<Move> capList = new ArrayList<>();
-        for (Move mv : moveList) {
-            if (board.getPiece(mv.getTo()) != Piece.NONE)
-                capList.add(mv);
-        }
-
-        // https://www.chessprogramming.org/Zzzzzz#Quiescence
+        List<Move> capList = board.pseudoLegalCaptures();
+        capList.removeIf(move -> !board.isMoveLegal(move, true));
 
         if (!capList.isEmpty()) {
 
@@ -334,7 +338,7 @@ public class Minimax {
 
                 board.doMove(cap);
 
-                double value = -quiescenceSearch(depth-1, -beta, -alpha, board, !max, phase, board.isDraw(), board.isMated(), moveList.size());
+                double value = -quiescenceSearch(depth-1, -beta, -alpha, board, !max, phase, board.isDraw(), board.isMated(), 0);
                 board.undoMove();
 
                 if( value >= beta )
