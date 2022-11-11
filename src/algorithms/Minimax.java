@@ -49,6 +49,7 @@ public class Minimax {
 
     public static Map<Long, HashEntry> transposition = new HashMap<>(transpSize);
     public static double cpt = 0;
+    public static double cpt2 = 0;
 
     public static List<Integer> pawnMiddleTable = Arrays.asList(
             0, 0, 0, 0, 0, 0, 0, 0,
@@ -216,11 +217,13 @@ public class Minimax {
         List<Move> moveList = board.legalMoves();
 
         if (depth == 0 || terminal)
-            return new Node(null, evaluate(board, max, board.gamePhase, draw, mated, moveList.size()));
+            //return new Node(null, evaluate(board, max, board.gamePhase, draw, mated, moveList.size()));
+            return new Node(null, quiescenceSearch(15, alpha, beta, board, max, board.gamePhase, draw, mated, moveList.size()));
+        // if last move was capturing launch q if not just eval ?
 
         // order the list by capturing moves first to maximize alpha beta cutoff
         moveList.sort(Comparator.comparingInt((Move m) ->
-                (int) moveValue(board.getPiece(m.getTo()).getPieceType(), board.getPiece(m.getFrom()).getPieceType(), zKey)));
+                (int) moveValue(board.getPiece(m.getTo()).getPieceType(), board.getPiece(m.getFrom()).getPieceType())));
         Collections.reverse(moveList);
 
         Move bestMove = moveList.get(0);
@@ -288,7 +291,62 @@ public class Minimax {
         }
     }
 
+    public static double quiescenceSearch(int depth, double alpha, double beta, Board board, boolean max, int phase, boolean draw, boolean mated, int playingMoveSize) {
 
+        // add QS searches to TT
+        // null move pruning
+        // TRY TT here
+        cpt2++;
+        double stand_pat = evaluate(board, max, phase, draw, mated, playingMoveSize);
+
+        if (depth == 0)
+            return stand_pat;
+
+        if (stand_pat >= beta)
+            return beta;
+
+        double DELTA = 0.05; // delta cutoff
+
+        if (alpha < stand_pat)
+            alpha = stand_pat;
+
+        // FIND BETTER WAY TO DO THAT (get psesudo and check if legal while making ?)
+        List<Move> moveList = board.legalMoves();
+        List<Move> capList = new ArrayList<>();
+        for (Move mv : moveList) {
+            if (board.getPiece(mv.getTo()) != Piece.NONE)
+                capList.add(mv);
+        }
+
+        // https://www.chessprogramming.org/Zzzzzz#Quiescence
+
+        if (!capList.isEmpty()) {
+
+            capList.sort(Comparator.comparingInt((Move m) ->
+                    (int) moveValue(board.getPiece(m.getTo()).getPieceType(), board.getPiece(m.getFrom()).getPieceType())));
+            Collections.reverse(capList);
+
+            for (Move cap : capList) {
+
+                if (stand_pat + DELTA < alpha) {
+                    continue;
+                }
+
+                board.doMove(cap);
+
+                double value = -quiescenceSearch(depth-1, -beta, -alpha, board, !max, phase, board.isDraw(), board.isMated(), moveList.size());
+                board.undoMove();
+
+                if( value >= beta )
+                    return beta;
+                if( value > alpha )
+                    alpha = value;
+            }
+        }
+
+        return alpha;
+
+    }
 
     public static double evaluate(Board board, boolean max, int phase, boolean draw, boolean mated, int playingMoveSize) {
 
@@ -315,10 +373,10 @@ public class Minimax {
             mobW = 5;
             pawnW = 5;
         } else if (phase == 2) { // end phase
-            matW = 1000;
+            matW = 1;
             contW = 0;
             mobW = 0;
-            pawnW = 0;
+            pawnW = 2;
         }
 
         // Material evaluation
@@ -403,10 +461,14 @@ public class Minimax {
         }
 
         // Mobility evaluation
-        if (max)
-            mobilityScore += playingMoveSize - MoveGenerator.getLegalMovesSize(board, Side.BLACK);
-        else
-            mobilityScore += MoveGenerator.getLegalMovesSize(board, Side.WHITE) - playingMoveSize;
+        if (playingMoveSize != 0) {
+            if (max)
+                mobilityScore += playingMoveSize - MoveGenerator.getLegalMovesSize(board, Side.BLACK);
+            else
+                mobilityScore += MoveGenerator.getLegalMovesSize(board, Side.WHITE) - playingMoveSize;
+        } else
+                mobilityScore += MoveGenerator.getLegalMovesSize(board, Side.WHITE) - MoveGenerator.getLegalMovesSize(board, Side.BLACK);
+
 
         // Tapered evaluation
         score = matW * materialScore + contW * controlScore + mobW * mobilityScore - pawnW * pawnScore;
@@ -416,13 +478,10 @@ public class Minimax {
         return score;
     }
 
-    public static float moveValue(PieceType vic, PieceType atk, long zob) {
+    public static float moveValue(PieceType vic, PieceType atk) {
 
         if (vic == null) {
-            /*if (transposition.containsKey(zob % transpSize)) // TT-move ordering : third highest
-                return 1;
-            else*/
-                return 0;
+            return 0;
         } else // victim/attacker capture : second highest
             return vic_atk_val[pieceIndex.get(vic)][pieceIndex.get(atk)];
     }

@@ -148,8 +148,10 @@ public class UCI {
                 Node bestNode = Minimax.minimax(board, 5, -Double.MAX_VALUE, Double.MAX_VALUE, isMax);
                 System.out.println(System.currentTimeMillis() - start);
                 System.out.println("Nodes explored " + Minimax.cpt);
+                System.out.println("Q nodes explored " + Minimax.cpt2);
                 System.out.println("bestmove " + bestNode.move);
                 Minimax.cpt = 0;
+                Minimax.cpt2 = 0;
             }
         } else {
             boolean isMax = board.getSideToMove() == Side.WHITE;
@@ -157,9 +159,12 @@ public class UCI {
             Node bestNode = Minimax.minimax(board, 5, -Double.MAX_VALUE, Double.MAX_VALUE, isMax);
             System.out.println(System.currentTimeMillis() - start);
             System.out.println("Nodes explored " + Minimax.cpt);
+            System.out.println("Q nodes explored " + Minimax.cpt2);
             System.out.println("bestmove " + bestNode.move);
             Minimax.cpt = 0;
+            Minimax.cpt2 = 0;
         }
+
     }
 
     public static void inputQuit() {
