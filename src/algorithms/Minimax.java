@@ -9,6 +9,7 @@ import java.util.*;
 import static chesslib.Bitboard.bitScanForward;
 import static chesslib.Bitboard.extractLsb;
 import static java.lang.Long.bitCount;
+import static java.lang.Long.min;
 
 public class Minimax {
 
@@ -215,9 +216,9 @@ public class Minimax {
         }
 
         if (allowNull && depth > 3) {
-            if(!board.isKingAttacked()) {
+            if(!board.isKingAttacked()) { // put here all conditions to check if its ok to nullmove
                 board.doNullMove();
-                double eval = minimax(board, depth - 2 - 1, alpha, beta, !max, false).score;
+                double eval = minimax(board, depth - 2 - 1, -beta, -beta+1, max, false).score;
                 board.undoMove();
 
                 if (eval >= beta)
@@ -242,13 +243,19 @@ public class Minimax {
 
         Move bestMove = moveList.get(0);
 
+        int moves_searched = 0;
         if (max) {
             int hashf = 1;
             double maxEval = -Double.MAX_VALUE;
 
             for (Move move : moveList) {
                 board.doMove(move);
-                double value = minimax(board, depth - 1, alpha, beta, false, true).score;
+                double value;
+                if (moves_searched >= 5 && depth >= 3)
+                    value = minimax(board, depth - 2, alpha, beta, false, true).score;
+                else
+                    value = minimax(board, depth - 1, alpha, beta, false, true).score;
+
                 board.undoMove();
 
                 if (value == higherBound)
@@ -262,6 +269,7 @@ public class Minimax {
 
                 alpha = Math.max(alpha, maxEval);
 
+                moves_searched++;
                 if (beta <= alpha)
                     break;
             }
@@ -277,7 +285,11 @@ public class Minimax {
 
             for (Move move : moveList) {
                 board.doMove(move);
-                double value = minimax(board, depth - 1, alpha, beta, true, true).score;
+                double value;
+                if (moves_searched >= 5 && depth > 2)
+                    value = minimax(board, depth - 2, alpha, beta, true, true).score;
+                else
+                    value = minimax(board, depth - 1, alpha, beta, true, true).score;
                 board.undoMove();
 
                 if (value == lowerBound)
@@ -290,7 +302,7 @@ public class Minimax {
                 }
 
                 beta = Math.min(beta, minEval);
-
+                moves_searched++;
                 if (beta <= alpha)
                     break;
 
@@ -317,6 +329,9 @@ public class Minimax {
             return beta;
 
         double DELTA = 0.02; // delta cutoff
+        if (stand_pat + DELTA < alpha) {
+            return alpha;
+        }
 
         if (alpha < stand_pat)
             alpha = stand_pat;
@@ -329,7 +344,32 @@ public class Minimax {
             capList.sort(Comparator.comparingInt((Move m) ->
                     (int) moveValue(board.getPiece(m.getTo()).getPieceType(), board.getPiece(m.getFrom()).getPieceType())));
             Collections.reverse(capList);
-
+/*
+            if (max) {
+                double maxEval = Double.MIN_VALUE;
+                for (Move cap : capList) {
+                    board.doMove(cap);
+                    double value = -quiescenceSearch(depth-1, alpha, beta, board, false, phase, board.isDraw(), board.isMated(), 0);
+                    board.undoMove();
+                    maxEval = Math.max(maxEval, value);
+                    if (maxEval >= beta)
+                        return maxEval;
+                    alpha = Math.max(maxEval, alpha);
+                }
+                return maxEval;
+            } else {
+                double minEval = Double.MAX_VALUE;
+                for (Move cap : capList) {
+                    board.doMove(cap);
+                    double value = -quiescenceSearch(depth-1, alpha, beta, board, true, phase, board.isDraw(), board.isMated(), 0);
+                    board.undoMove();
+                    minEval = Math.min(minEval, value);
+                    if (minEval <= alpha)
+                        return minEval;
+                    beta = Math.min(minEval, beta);
+                }
+                return minEval;
+            }*/
             for (Move cap : capList) {
 
                 if (stand_pat + DELTA < alpha) {
@@ -347,9 +387,7 @@ public class Minimax {
                     alpha = value;
             }
         }
-
         return alpha;
-
     }
 
     public static double evaluate(Board board, boolean max, int phase, boolean draw, boolean mated, int playingMoveSize) {
@@ -385,7 +423,7 @@ public class Minimax {
 
         // Material evaluation
         long bboard = board.getBitboard();
-
+/*
         int w_doubled = 0, b_doubled = 0, w_blocked = 0, b_blocked = 0, w_isolated = 0, b_isolated = 0;
         int sq, p_d, p_b, p_i;
         long copyBoard = bboard;
@@ -443,6 +481,8 @@ public class Minimax {
 
         pawnScore = w_doubled - b_doubled + w_blocked - b_blocked + w_isolated - b_isolated;
 
+
+*/
         for (int i = 0; i < 64; i++) {
             if (((1L << i) & bboard) != 0L) {
                 Piece p = board.getPiece(Square.squareAt(i));
@@ -463,7 +503,7 @@ public class Minimax {
             else if (wCount < bCount)
                 controlScore -= 1;
         }
-
+/*
         // Mobility evaluation
         if (playingMoveSize != 0) {
             if (max)
@@ -472,7 +512,7 @@ public class Minimax {
                 mobilityScore += MoveGenerator.getLegalMovesSize(board, Side.WHITE) - playingMoveSize;
         } else
                 mobilityScore += MoveGenerator.getLegalMovesSize(board, Side.WHITE) - MoveGenerator.getLegalMovesSize(board, Side.BLACK);
-
+*/
 
         // Tapered evaluation
         score = matW * materialScore + contW * controlScore + mobW * mobilityScore - pawnW * pawnScore;
