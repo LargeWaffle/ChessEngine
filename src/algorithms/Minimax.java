@@ -251,7 +251,7 @@ public class Minimax {
             for (Move move : moveList) {
                 board.doMove(move);
                 double value;
-                if (moves_searched >= 5 && depth >= 3)
+                if (moves_searched >= 5 && depth >= 2)
                     value = minimax(board, depth - 2, alpha, beta, false, true).score;
                 else
                     value = minimax(board, depth - 1, alpha, beta, false, true).score;
@@ -318,8 +318,6 @@ public class Minimax {
 
         cpt2++;
 
-        // null move pruning
-
         double stand_pat = evaluate(board, max, phase, draw, mated, playingMoveSize);
 
         if (depth == 0)
@@ -344,32 +342,7 @@ public class Minimax {
             capList.sort(Comparator.comparingInt((Move m) ->
                     (int) moveValue(board.getPiece(m.getTo()).getPieceType(), board.getPiece(m.getFrom()).getPieceType())));
             Collections.reverse(capList);
-/*
-            if (max) {
-                double maxEval = Double.MIN_VALUE;
-                for (Move cap : capList) {
-                    board.doMove(cap);
-                    double value = -quiescenceSearch(depth-1, alpha, beta, board, false, phase, board.isDraw(), board.isMated(), 0);
-                    board.undoMove();
-                    maxEval = Math.max(maxEval, value);
-                    if (maxEval >= beta)
-                        return maxEval;
-                    alpha = Math.max(maxEval, alpha);
-                }
-                return maxEval;
-            } else {
-                double minEval = Double.MAX_VALUE;
-                for (Move cap : capList) {
-                    board.doMove(cap);
-                    double value = -quiescenceSearch(depth-1, alpha, beta, board, true, phase, board.isDraw(), board.isMated(), 0);
-                    board.undoMove();
-                    minEval = Math.min(minEval, value);
-                    if (minEval <= alpha)
-                        return minEval;
-                    beta = Math.min(minEval, beta);
-                }
-                return minEval;
-            }*/
+
             for (Move cap : capList) {
 
                 if (stand_pat + DELTA < alpha) {
