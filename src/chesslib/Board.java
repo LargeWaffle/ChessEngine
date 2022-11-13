@@ -136,7 +136,7 @@ public class Board implements Cloneable, BoardEvent {
             if (isUpperCase(fc) || isLowerCase(fc))
                 if (fc != 'p' && fc != 'P')
                     nbPieces++;
-            if (nbPieces == 8) // if there are 8 or more pieces left
+            if (nbPieces == 9) // if there are 6 or less major pieces left (not counting kings)
                 return false;
         }
         return true;

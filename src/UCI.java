@@ -63,6 +63,8 @@ public class UCI {
     }
 
     public static void inputUCINewGame() {
+        board = new Board();
+        st = new StartTree();
         board.loadFromFen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
     }
 
@@ -110,6 +112,9 @@ public class UCI {
             board.updateGamePhase(2);
         }
 
+        if (fromFen)
+            board.updateGamePhase(1);
+
         if (board.gamePhase == 0) {
             if (board.getSideToMove() == Side.WHITE) {
                 if (board.getMoveCounter() != 2) {
@@ -142,7 +147,7 @@ public class UCI {
         } else {
             boolean isMax = board.getSideToMove() == Side.WHITE;
             long start = System.currentTimeMillis();
-            Node bestNode = Minimax.minimax(board, 7, -Double.MAX_VALUE, Double.MAX_VALUE, isMax, true);
+            Node bestNode = Minimax.minimax(board, 5, -Double.MAX_VALUE, Double.MAX_VALUE, isMax, true);
             System.out.println(System.currentTimeMillis() - start);
             System.out.println("Nodes explored " + Minimax.cpt);
             System.out.println("Q nodes explored " + Minimax.cpt2);
