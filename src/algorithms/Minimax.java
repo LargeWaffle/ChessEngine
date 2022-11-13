@@ -229,8 +229,8 @@ public class Minimax {
         List<Move> moveList = board.legalMoves();
 
         if (depth <= 0 || terminal) {
-            if (board.isLastMoveCapturing()) // if last move was capturing launch qsearch
-                return new Node(null, quiescenceSearch(5, alpha, beta, board, max, board.gamePhase, draw, mated, moveList.size()));
+            if (board.isLastMoveCapturing() || board.gamePhase == 2) // if last move was capturing launch qsearch
+                return new Node(null, quiescenceSearch(alpha, beta, board, max, board.gamePhase, draw, mated, moveList.size()));
             else
                 return new Node(null, evaluate(board, max, board.gamePhase, draw, mated, moveList.size()));
         }
@@ -315,25 +315,18 @@ public class Minimax {
         }
     }
 
-    public static double quiescenceSearch(int depth, double alpha, double beta, Board board, boolean max, int phase, boolean draw, boolean mated, int playingMoveSize) {
+    public static double quiescenceSearch(double alpha, double beta, Board board, boolean max, int phase, boolean draw, boolean mated, int playingMoveSize) {
 
         cpt2++;
+        double DELTA = 1500; // delta cutoff
 
         double stand_pat = evaluate(board, max, phase, draw, mated, playingMoveSize);
 
-        if (depth == 0)
-            return stand_pat;
-
-        if (stand_pat >= beta)
-            return beta;
-
-        double DELTA = 0.02; // delta cutoff
-        if (stand_pat + DELTA < alpha) {
-            return alpha;
-        }
-
         if (alpha < stand_pat)
             alpha = stand_pat;
+
+        if (alpha >= beta)
+            return beta;
 
         List<Move> capList = board.pseudoLegalCaptures();
         capList.removeIf(move -> !board.isMoveLegal(move, true));
@@ -352,15 +345,17 @@ public class Minimax {
 
                 board.doMove(cap);
 
-                double value = -quiescenceSearch(depth - 1, -beta, -alpha, board, !max, phase, board.isDraw(), board.isMated(), 0);
+                double value = -quiescenceSearch(-beta, -alpha, board, !max, phase, board.isDraw(), board.isMated(), 0);
                 board.undoMove();
 
-                if (value >= beta)
-                    return beta;
-                if (value > alpha)
+                if (alpha < value)
                     alpha = value;
+
+                if (alpha >= beta)
+                    return beta;
             }
         }
+
         return alpha;
     }
 
