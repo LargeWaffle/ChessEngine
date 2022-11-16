@@ -51,6 +51,10 @@ public class Minimax {
             PieceType.NONE, 6));
 
     public static Map<Long, HashEntry> transposition = new HashMap<>(transpSize);
+
+    public static double frontierFutility = pieceValues.get(PieceType.PAWN) * 1.2;
+    public static double extendedFutility = pieceValues.get(PieceType.ROOK);
+    public static double rasorFutility = pieceValues.get(PieceType.QUEEN);
     public static double cpt = 0;
     public static double cpt2 = 0;
     public static List<Integer> pawnMiddleTable = Arrays.asList(
@@ -257,6 +261,21 @@ public class Minimax {
 
                 board.undoMove();
 
+                if (depth == 3 && (value + rasorFutility < alpha) && value != higherBound) {
+                    System.out.println("RAZORED");
+                    break;
+                }
+
+                if (depth == 2 && (value + extendedFutility < alpha) && value != higherBound) {
+                    System.out.println("EXTENDED");
+                    break;
+                }
+
+                if (depth == 1 && (value + frontierFutility < alpha) && value != higherBound) {
+                    System.out.println("FUTILITIED and " + alpha + "and " + value + frontierFutility);
+                    break;
+                }
+
                 if (value == higherBound)
                     value += depth;
 
@@ -292,6 +311,21 @@ public class Minimax {
                     value = minimax(board, depth - 1, alpha, beta, true, true).score;
                 board.undoMove();
 
+                /*if (depth == 3 && (value - rasorFutility < beta) && value != lowerBound) {
+                    System.out.println("RAZORED");
+                    break;
+                }
+
+                if (depth == 2 && (value - extendedFutility < beta) && value != lowerBound) {
+                    System.out.println("EXTENDED");
+                    break;
+                }
+
+                if (depth == 1 && (value - frontierFutility < beta) && value != lowerBound) {
+                    System.out.println("FUTILITIED and " + beta + " and " + (value - frontierFutility));
+                    break;
+                }*/
+
                 if (value == lowerBound)
                     value -= depth;
 
@@ -303,6 +337,7 @@ public class Minimax {
 
                 beta = Math.min(beta, minEval);
                 moves_searched++;
+
                 if (beta <= alpha)
                     break;
 
@@ -316,7 +351,7 @@ public class Minimax {
     }
 
     public static double quiescenceSearch(Board board, double alpha, double beta, int depth) {
-        // depth = 5 and DELTA = 200 --> too long
+        // depth = 5 and DELTA = 2000 --> too long
 
         cpt2++;
         double DELTA = 2000; // delta cutoff
