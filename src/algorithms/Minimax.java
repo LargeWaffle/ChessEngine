@@ -230,7 +230,7 @@ public class Minimax {
 
         if (depth <= 0 || terminal) {
             if (board.isLastMoveCapturing() || board.gamePhase == 2) // if last move was capturing launch qsearch
-                return new Node(null, quiescenceSearch(alpha, beta, board, max, board.gamePhase, draw, mated, moveList.size()));
+                return new Node(null, quiescenceSearch(board, alpha, beta));
             else
                 return new Node(null, evaluate(board, max, board.gamePhase, draw, mated, moveList.size()));
         }
@@ -315,12 +315,13 @@ public class Minimax {
         }
     }
 
-    public static double quiescenceSearch(double alpha, double beta, Board board, boolean max, int phase, boolean draw, boolean mated, int playingMoveSize) {
+    public static double quiescenceSearch(Board board, double alpha, double beta) {
 
         cpt2++;
         double DELTA = 1500; // delta cutoff
 
-        double stand_pat = evaluate(board, max, phase, draw, mated, playingMoveSize);
+        boolean max = board.getSideToMove() == Side.WHITE;
+        double stand_pat = evaluate(board, max, board.gamePhase, false, false, 0);
 
         if (stand_pat >= beta)
             return beta;
@@ -343,7 +344,7 @@ public class Minimax {
                   //  continue;
 
                 board.doMove(cap);
-                double value = -quiescenceSearch(-beta, -alpha, board, !max, phase, board.isDraw(), board.isMated(), 0);
+                double value = -quiescenceSearch(board, -beta, -alpha);
                 board.undoMove();
 
 

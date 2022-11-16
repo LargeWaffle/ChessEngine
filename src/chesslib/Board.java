@@ -426,8 +426,10 @@ public class Board implements Cloneable, BoardEvent {
             boolean b = !Piece.NONE.equals(getPiece(move.getTo()));
             doMove(move);
             return b;
-        } else
+        } else {
+            doMove(move);
             return false;
+        }
     }
 
     /**
