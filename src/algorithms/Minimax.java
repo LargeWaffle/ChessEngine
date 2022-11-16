@@ -19,12 +19,9 @@ public class Minimax {
 
     public static double lowerBound = -10000.0, higherBound = 10000.0;
 
-    public static Map<Character, Integer> values = new HashMap<>(Map.of(
-            'Q', 9, 'R', 5, 'N', 3, 'B', 3, 'P', 1,
-            'q', -9, 'r', -5, 'n', -3, 'b', -3, 'p', -1));
+    public static Map<Character, Integer> values = new HashMap<>(Map.of('Q', 9, 'R', 5, 'N', 3, 'B', 3, 'P', 1, 'q', -9, 'r', -5, 'n', -3, 'b', -3, 'p', -1));
 
-    public static int[][] vic_atk_val = {
-            {60, 61, 62, 63, 64, 65, 0},       // victim K, attacker K, Q, R, B, N, P, None
+    public static int[][] vic_atk_val = {{60, 61, 62, 63, 64, 65, 0},       // victim K, attacker K, Q, R, B, N, P, None
             {50, 51, 52, 53, 54, 55, 0}, // victim Q, attacker K, Q, R, B, N, P, None
             {40, 41, 42, 43, 44, 45, 0}, // victim R, attacker K, Q, R, B, N, P, None
             {30, 31, 32, 33, 34, 35, 0}, // victim B, attacker K, Q, R, B, N, P, None
@@ -32,23 +29,6 @@ public class Minimax {
             {10, 11, 12, 13, 14, 15, 0}, // victim P, attacker K, Q, R, B, N, P, None
             {0, 0, 0, 0, 0, 0, 0},      // no victim
     };
-    public static Map<PieceType, Integer> pieceValues = new HashMap<>(Map.of(
-            PieceType.KING, 20000,
-            PieceType.QUEEN, 900,
-            PieceType.ROOK, 500,
-            PieceType.KNIGHT, 330,
-            PieceType.BISHOP, 320,
-            PieceType.PAWN, 120,
-            PieceType.NONE, 0));
-
-    public static Map<PieceType, Integer> pieceIndex = new HashMap<>(Map.of(
-            PieceType.KING, 0,
-            PieceType.QUEEN, 1,
-            PieceType.ROOK, 2,
-            PieceType.KNIGHT, 3,
-            PieceType.BISHOP, 4,
-            PieceType.PAWN, 5,
-            PieceType.NONE, 6));
 
     public static Map<Long, HashEntry> transposition = new HashMap<>(transpSize);
 
@@ -209,12 +189,9 @@ public class Minimax {
             HashEntry rec = transposition.get(zKey % transpSize);
             if (rec.zobrist == zKey) {
                 if (rec.depth >= depth) {
-                    if (rec.flag == 0)
-                        return rec.node;
-                    if (rec.flag == 1 && rec.node.score <= alpha)
-                        return new Node(rec.node.move, alpha);
-                    if (rec.flag == 2 && rec.node.score >= beta)
-                        return new Node(rec.node.move, beta);
+                    if (rec.flag == 0) return rec.node;
+                    if (rec.flag == 1 && rec.node.score <= alpha) return new Node(rec.node.move, alpha);
+                    if (rec.flag == 2 && rec.node.score >= beta) return new Node(rec.node.move, beta);
                 }
             }
         }
@@ -222,26 +199,23 @@ public class Minimax {
         if (allowNull && depth > 3 && !board.isKingAttacked()) { // put here all conditions to check if its ok to nullmove
 
             board.doNullMove();
-            double eval = minimax(board, depth - 2 - 1, 1-alpha, alpha-1, !max, false).score;
+            double eval = minimax(board, depth - 2 - 1, 1 - alpha, alpha - 1, !max, false).score;
             board.undoMove();
 
-            if (eval >= beta)
-                return new Node(null, eval);
+            if (eval >= beta) return new Node(null, eval);
         }
 
         if (depth <= 0 || terminal) {
             if (board.isLastMoveCapturing() || board.gamePhase == 2) // if last move was capturing launch qsearch
                 return new Node(null, quiescenceSearch(board, alpha, beta, 5));
-            else
-                return new Node(null, evaluate(board, max, board.gamePhase, draw, mated));
+            else return new Node(null, evaluate(board, max, board.gamePhase, draw, mated));
         }
 
         // generate children
         List<Move> moveList = board.legalMoves();
 
         // order the list by capturing moves first to maximize alpha beta cutoff
-        moveList.sort(Comparator.comparingInt((Move m) ->
-                (int) moveValue(max, m.toString(), board.getPiece(m.getTo()).getPieceType(), board.getPiece(m.getFrom()).getPieceType(), zKey)));
+        moveList.sort(Comparator.comparingInt((Move m) -> (int) moveValue(max, m.toString(), board.getPiece(m.getTo()).getPieceType(), board.getPiece(m.getFrom()).getPieceType(), zKey)));
         Collections.reverse(moveList);
 
         Move bestMove = moveList.get(0);
@@ -255,13 +229,12 @@ public class Minimax {
                 board.doMove(move);
                 double value;
                 if (moves_searched >= 5 && depth >= 3) // LATE MOVE REDUCTION
-                      value = minimax(board, depth - 3, alpha, beta, false, true).score;
-                else
-                    value = minimax(board, depth - 1, alpha, beta, false, true).score;
+                    value = minimax(board, depth - 3, alpha, beta, false, true).score;
+                else value = minimax(board, depth - 1, alpha, beta, false, true).score;
 
                 board.undoMove();
 
-                if (depth == 3 && (value + rasorFutility < alpha) && value != higherBound) {
+                /*if (depth == 3 && (value + rasorFutility < alpha) && value != higherBound) {
                     System.out.println("RAZORED");
                     break;
                 }
@@ -274,10 +247,9 @@ public class Minimax {
                 if (depth == 1 && (value + frontierFutility < alpha) && value != higherBound) {
                     System.out.println("FUTILITIED and " + alpha + "and " + value + frontierFutility);
                     break;
-                }
+                }*/
 
-                if (value == higherBound)
-                    value += depth;
+                if (value == higherBound) value += depth;
 
                 if (value > maxEval) {
                     hashf = 0;
@@ -288,13 +260,11 @@ public class Minimax {
                 alpha = Math.max(alpha, maxEval);
 
                 moves_searched++;
-                if (beta <= alpha)
-                    break;
+                if (beta <= alpha) break;
             }
 
             Node node = new Node(bestMove, maxEval);
-            if (bestMove != null)
-                transposition.put(zKey % transpSize, new HashEntry(zKey, depth, hashf, node));
+            if (bestMove != null) transposition.put(zKey % transpSize, new HashEntry(zKey, depth, hashf, node));
             return node;
 
         } else {
@@ -307,8 +277,7 @@ public class Minimax {
                 double value;
                 if (moves_searched >= 5 && depth > 3) // LATE MOVE REDUCTION
                     value = minimax(board, depth - 3, alpha, beta, true, true).score;
-                else
-                    value = minimax(board, depth - 1, alpha, beta, true, true).score;
+                else value = minimax(board, depth - 1, alpha, beta, true, true).score;
                 board.undoMove();
 
                 /*if (depth == 3 && (value - rasorFutility < beta) && value != lowerBound) {
@@ -326,8 +295,7 @@ public class Minimax {
                     break;
                 }*/
 
-                if (value == lowerBound)
-                    value -= depth;
+                if (value == lowerBound) value -= depth;
 
                 if (value < minEval) {
                     hashf = 0;
@@ -338,14 +306,12 @@ public class Minimax {
                 beta = Math.min(beta, minEval);
                 moves_searched++;
 
-                if (beta <= alpha)
-                    break;
+                if (beta <= alpha) break;
 
             }
 
             Node node = new Node(bestMove, minEval);
-            if (bestMove != null)
-                transposition.put(zKey % transpSize, new HashEntry(zKey, depth, hashf, node));
+            if (bestMove != null) transposition.put(zKey % transpSize, new HashEntry(zKey, depth, hashf, node));
             return node;
         }
     }
@@ -359,54 +325,46 @@ public class Minimax {
         boolean max = board.getSideToMove() == Side.WHITE;
         double stand_pat = evaluate(board, max, board.gamePhase, false, false);
 
-        if (depth == 0)
-            return stand_pat;
+        if (depth == 0) return stand_pat;
 
-        if (stand_pat >= beta)
-            return beta;
+        if (stand_pat >= beta) return beta;
 
-        if (alpha < stand_pat)
-            alpha = stand_pat;
+        if (alpha < stand_pat) alpha = stand_pat;
 
         List<Move> capList = board.pseudoLegalCaptures();
         capList.removeIf(move -> !board.isMoveLegal(move, true));
 
         if (!capList.isEmpty()) {
 
-            capList.sort(Comparator.comparingInt((Move m) ->
-                    (int) moveValue(max, m.toString(), board.getPiece(m.getTo()).getPieceType(), board.getPiece(m.getFrom()).getPieceType(), board.getZobristKey())));
+            capList.sort(Comparator.comparingInt((Move m) -> (int) moveValue(max, m.toString(), board.getPiece(m.getTo()).getPieceType(), board.getPiece(m.getFrom()).getPieceType(), board.getZobristKey())));
             Collections.reverse(capList);
 
             for (Move cap : capList) {
 
-                if (stand_pat + DELTA < alpha)
-                    continue;
+                if (stand_pat + DELTA < alpha) continue;
 
                 board.doMove(cap);
-                double value = quiescenceSearch(board, -beta, -alpha, depth-1);
+                double value = quiescenceSearch(board, -beta, -alpha, depth - 1);
                 board.undoMove();
 
 
-                if (alpha < value)
-                    alpha = value;
+                if (alpha < value) alpha = value;
 
-                if (value >= beta)
-                    return beta;
+                if (value >= beta) return beta;
             }
         }
 
         return alpha;
     }
+
     public static double evaluate(Board board, boolean max, int phase, boolean draw, boolean mated) {
 
         // EDGE CASES
         double score = 0.0, materialScore = 0.0, controlScore = 0.0, mobilityScore = 0.0, pawnScore = 0.0;
 
-        if (mated)
-            return max ? lowerBound : higherBound;
+        if (mated) return max ? lowerBound : higherBound;
 
-        if (draw)
-            return 0.0;
+        if (draw) return 0.0;
 
         int matW = 0, contW = 0, mobW = 0, pawnW = 0;
 
@@ -456,11 +414,9 @@ public class Minimax {
             Piece frontPiece = board.getPiece(frontSquare);
 
             if (frontIndex >= 0 && frontIndex < 64) {
-                if (frontPiece == controlPiece)
-                    p_d++;
+                if (frontPiece == controlPiece) p_d++;
 
-                if (frontPiece != Piece.NONE)
-                    p_b++;
+                if (frontPiece != Piece.NONE) p_b++;
             }
 
             boolean isIsolated = true;
@@ -472,8 +428,7 @@ public class Minimax {
                 }
             }
 
-            if (isIsolated)
-                p_i++;
+            if (isIsolated) p_i++;
 
             if (pieceSideWhite) {
                 w_doubled += p_d;
@@ -504,10 +459,8 @@ public class Minimax {
         for (int i = 0; i < 64; i++) {
             int wCount = bitCount(board.squareAttackedBy(Square.squareAt(i), Side.WHITE));
             int bCount = bitCount(board.squareAttackedBy(Square.squareAt(i), Side.BLACK));
-            if (wCount > bCount)
-                controlScore += 1;
-            else if (wCount < bCount)
-                controlScore -= 1;
+            if (wCount > bCount) controlScore += 1;
+            else if (wCount < bCount) controlScore -= 1;
         }
 
         // Tapered evaluation
@@ -522,12 +475,10 @@ public class Minimax {
 
         if (vic == null) {
             //if (transposition.containsKey(zob % transpSize))
-                //if (Objects.equals(transposition.get(zob % transpSize).node.move.toString(), m))
-                    //return 2;
-            if (max && (m.charAt(1) < m.charAt(3)))
-                return 1;
-            else if (!max && (m.charAt(1) > m.charAt(3)))
-                return 1;
+            //if (Objects.equals(transposition.get(zob % transpSize).node.move.toString(), m))
+            //return 2;
+            if (max && (m.charAt(1) < m.charAt(3))) return 1;
+            else if (!max && (m.charAt(1) > m.charAt(3))) return 1;
         } else // victim/attacker capture : second highest
             return vic_atk_val[pieceIndex.get(vic)][pieceIndex.get(atk)];
 
