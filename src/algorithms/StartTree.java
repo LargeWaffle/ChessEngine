@@ -8,9 +8,10 @@ public class StartTree {
     public static treeNode tree;
     public static String tree_move;
 
-    public static boolean phase1 = false;
+    public static boolean phase1;
 
     public StartTree() {
+        phase1 = false;
         tree = new treeNode("", Arrays.asList(
                 new treeNode("e2e4", List.of(
                         new treeNode("c7c5", Arrays.asList(

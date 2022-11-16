@@ -250,9 +250,9 @@ public class Minimax {
             for (Move move : moveList) {
                 board.doMove(move);
                 double value;
-                if (moves_searched >= 5 && depth >= 2) // LATE MOVE REDUCTION
-                    value = minimax(board, depth - 2, alpha, beta, false, true).score;
-                else
+                //if (moves_searched >= 5 && depth >= 3) // LATE MOVE REDUCTION
+                    //value = minimax(board, depth - 3, alpha, beta, false, true).score;
+                //else
                     value = minimax(board, depth - 1, alpha, beta, false, true).score;
 
                 board.undoMove();
@@ -286,9 +286,9 @@ public class Minimax {
             for (Move move : moveList) {
                 board.doMove(move);
                 double value;
-                if (moves_searched >= 5 && depth > 2) // LATE MOVE REDUCTION
-                    value = minimax(board, depth - 2, alpha, beta, true, true).score;
-                else
+                //if (moves_searched >= 5 && depth > 3) // LATE MOVE REDUCTION
+                    //value = minimax(board, depth - 3, alpha, beta, true, true).score;
+                //else
                     value = minimax(board, depth - 1, alpha, beta, true, true).score;
                 board.undoMove();
 
@@ -322,11 +322,11 @@ public class Minimax {
 
         double stand_pat = evaluate(board, max, phase, draw, mated, playingMoveSize);
 
+        if (stand_pat >= beta)
+            return beta;
+
         if (alpha < stand_pat)
             alpha = stand_pat;
-
-        if (alpha >= beta)
-            return beta;
 
         List<Move> capList = board.pseudoLegalCaptures();
         capList.removeIf(move -> !board.isMoveLegal(move, true));
@@ -339,26 +339,24 @@ public class Minimax {
 
             for (Move cap : capList) {
 
-                if (stand_pat + DELTA < alpha) {
-                    continue;
-                }
+                //if (stand_pat + DELTA < alpha)
+                  //  continue;
 
                 board.doMove(cap);
-
                 double value = -quiescenceSearch(-beta, -alpha, board, !max, phase, board.isDraw(), board.isMated(), 0);
                 board.undoMove();
+
 
                 if (alpha < value)
                     alpha = value;
 
-                if (alpha >= beta)
+                if (value >= beta)
                     return beta;
             }
         }
 
         return alpha;
     }
-
     public static double evaluate(Board board, boolean max, int phase, boolean draw, boolean mated, int playingMoveSize) {
 
         // EDGE CASES
@@ -493,9 +491,9 @@ public class Minimax {
     public static float moveValue(boolean max, String m, PieceType vic, PieceType atk, long zob) {
 
         if (vic == null) {
-            if (transposition.containsKey(zob % transpSize))
-                if (Objects.equals(transposition.get(zob % transpSize).node.move.toString(), m))
-                    return 2;
+            //if (transposition.containsKey(zob % transpSize))
+                //if (Objects.equals(transposition.get(zob % transpSize).node.move.toString(), m))
+                    //return 2;
             if (max && (m.charAt(1) < m.charAt(3)))
                 return 1;
             else if (!max && (m.charAt(1) > m.charAt(3)))

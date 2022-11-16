@@ -65,6 +65,7 @@ public class UCI {
     public static void inputUCINewGame() {
         board = new Board();
         st = new StartTree();
+        new Minimax();
         board.loadFromFen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
     }
 
@@ -151,13 +152,14 @@ public class UCI {
             System.out.println(System.currentTimeMillis() - start);
             System.out.println("Nodes explored " + Minimax.cpt);
             System.out.println("Q nodes explored " + Minimax.cpt2);
-            System.out.println("gamephase " + board.gamePhase);
             System.out.println("bestscore " + bestNode.score);
-            System.out.println("bestmove " + bestNode.move);
+            if (bestNode.move == null)
+                System.out.println("bestmove " + board.legalMoves().get(0));
+            else
+                System.out.println("bestmove " + bestNode.move);
             Minimax.cpt = 0;
             Minimax.cpt2 = 0;
         }
-
     }
 
     public static void inputQuit() {
