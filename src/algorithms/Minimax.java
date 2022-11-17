@@ -205,7 +205,7 @@ public class Minimax {
 
         cpt++;
 
-        if (transposition.containsKey(zKey % transpSize)) {
+        /*if (transposition.containsKey(zKey % transpSize)) {
             HashEntry rec = transposition.get(zKey % transpSize);
             if (rec.zobrist == zKey) {
                 if (rec.depth >= depth) {
@@ -217,23 +217,27 @@ public class Minimax {
                         return new Node(rec.node.move, beta);
                 }
             }
-        }
-
-        if (allowNull && depth > 3 && !board.isKingAttacked()) { // put here all conditions to check if its ok to nullmove
-
-            board.doNullMove();
-            double eval = minimax(board, depth - 2 - 1, 1 - alpha, alpha - 1, !max, false).score;
-            board.undoMove();
-
-            if (eval >= beta)
-                return new Node(null, eval);
-        }
+        }*/
 
         if (depth <= 0 || terminal) {
-            if (board.isLastMoveCapturing() || board.gamePhase == 2) // if last move was capturing launch qsearch
-                return new Node(null, quiescenceSearch(board, alpha, beta, 5));
-            else
+            //if (board.isLastMoveCapturing() || board.gamePhase == 2) // if last move was capturing launch qsearch
+                //return new Node(null, quiescenceSearch(board, alpha, beta, 5));
+            //else
                 return new Node(null, evaluate(board, max, board.gamePhase, draw, mated));
+        }
+
+        // think this kinda works
+        if (allowNull && depth >= 3 && !board.isKingAttacked()) { // put here all conditions to check if its ok to nullmove
+
+            double eval = evaluate(board, max, board.gamePhase, draw, mated);
+            if (eval >= beta) {
+                board.doNullMove();
+                eval = minimax(board, depth - 2 - 1, -beta, -beta+1, !max, false).score;
+                board.undoMove();
+
+                if (eval >= beta)
+                    return new Node(null, eval);
+            }
         }
 
         // generate children
@@ -254,9 +258,9 @@ public class Minimax {
             for (Move move : moveList) {
                 board.doMove(move);
                 double value;
-                if (moves_searched >= 5 && depth >= 3) // LATE MOVE REDUCTION
-                    value = minimax(board, depth - 3, alpha, beta, false, true).score;
-                else
+                //if (moves_searched >= 5 && depth >= 3) // LATE MOVE REDUCTION
+                  //  value = minimax(board, depth - 3, alpha, beta, false, true).score;
+                //else
                     value = minimax(board, depth - 1, alpha, beta, false, true).score;
 
                 board.undoMove();
@@ -305,9 +309,9 @@ public class Minimax {
             for (Move move : moveList) {
                 board.doMove(move);
                 double value;
-                if (moves_searched >= 5 && depth > 3) // LATE MOVE REDUCTION
-                    value = minimax(board, depth - 3, alpha, beta, true, true).score;
-                else
+                //if (moves_searched >= 5 && depth > 3) // LATE MOVE REDUCTION
+                  //  value = minimax(board, depth - 3, alpha, beta, true, true).score;
+                //  else
                     value = minimax(board, depth - 1, alpha, beta, true, true).score;
                 board.undoMove();
 
