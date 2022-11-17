@@ -226,7 +226,7 @@ public class Minimax {
                 return new Node(null, evaluate(board, max, board.gamePhase, draw, mated));
         }
 
-        // think this kinda works
+        // think this kinda works - ...
         if (allowNull && depth >= 3 && !board.isKingAttacked()) { // put here all conditions to check if its ok to nullmove
 
             double eval = evaluate(board, max, board.gamePhase, draw, mated);
@@ -258,8 +258,8 @@ public class Minimax {
             for (Move move : moveList) {
                 board.doMove(move);
                 double value;
-                //if (moves_searched >= 5 && depth >= 3) // LATE MOVE REDUCTION
-                  //  value = minimax(board, depth - 3, alpha, beta, false, true).score;
+                //if (moves_searched >= 10 && depth >= 3) // LATE MOVE REDUCTION
+                    //value = minimax(board, depth - 3, alpha, beta, false, true).score;
                 //else
                     value = minimax(board, depth - 1, alpha, beta, false, true).score;
 
@@ -309,9 +309,9 @@ public class Minimax {
             for (Move move : moveList) {
                 board.doMove(move);
                 double value;
-                //if (moves_searched >= 5 && depth > 3) // LATE MOVE REDUCTION
-                  //  value = minimax(board, depth - 3, alpha, beta, true, true).score;
-                //  else
+                //if (moves_searched >= 10 && depth > 3) // LATE MOVE REDUCTION
+                    //value = minimax(board, depth - 3, alpha, beta, true, true).score;
+                  //else
                     value = minimax(board, depth - 1, alpha, beta, true, true).score;
                 board.undoMove();
 
@@ -419,17 +419,14 @@ public class Minimax {
         if (phase == 0) { // opening phase
             matW = 1;
             contW = 10;
-            mobW = 2;
             pawnW = 2;
         } else if (phase == 1) { // middle phase
             matW = 1;
-            contW = 10;
-            mobW = 0;
+            contW = 1;
             pawnW = 1;
         } else if (phase == 2) { // end phase
             matW = 1;
             contW = 0;
-            mobW = 0;
             pawnW = 0;
         }
 
@@ -499,9 +496,9 @@ public class Minimax {
                 Piece p = board.getPiece(Square.squareAt(i));
                 PieceType type = p.getPieceType();
                 if (p.getPieceSide() == Side.WHITE)
-                    materialScore += pieceValues.get(type) + (phase == 1 ? midgamePST.get(type).get(i) : endgamePST.get(type).get(i));
+                    materialScore += pieceValues.get(type);// + (phase == 1 ? midgamePST.get(type).get(i) : endgamePST.get(type).get(i));
                 else
-                    materialScore -= pieceValues.get(type) - (phase == 1 ? midgamePST.get(type).get(63 - i) : endgamePST.get(type).get(63 - i));
+                    materialScore -= pieceValues.get(type);// - (phase == 1 ? midgamePST.get(type).get(63 - i) : endgamePST.get(type).get(63 - i));
             }
         }
 
@@ -516,7 +513,7 @@ public class Minimax {
         }
 
         // Tapered evaluation
-        score = matW * materialScore + contW * controlScore + mobW * mobilityScore - pawnW * pawnScore;
+        score = matW * materialScore + contW * controlScore - pawnW * pawnScore;
 
         // scale between lowerBound and higherBound
         //score = (score - lowerBound) / (higherBound - lowerBound);
