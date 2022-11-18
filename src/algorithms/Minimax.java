@@ -4,6 +4,7 @@ import chesslib.*;
 import chesslib.game.Game;
 import chesslib.move.*;
 
+import javax.swing.plaf.synth.SynthTextAreaUI;
 import java.util.*;
 
 import static chesslib.Bitboard.bitScanForward;
@@ -202,28 +203,31 @@ public class Minimax {
         boolean draw = board.isDraw();
         boolean mated = board.isMated();
         boolean terminal = draw || mated;
+        int hashf = 0;
 
         cpt++;
 
-        /*if (transposition.containsKey(zKey % transpSize)) {
+        if (transposition.containsKey(zKey % transpSize)) {
             HashEntry rec = transposition.get(zKey % transpSize);
             if (rec.zobrist == zKey) {
                 if (rec.depth >= depth) {
                     if (rec.flag == 0)
                         return rec.node;
-                    if (rec.flag == 1 && rec.node.score <= alpha)
+                    if (rec.flag == 1 && rec.node.score <= alpha) // real score >= node score
                         return new Node(rec.node.move, alpha);
                     if (rec.flag == 2 && rec.node.score >= beta)
                         return new Node(rec.node.move, beta);
                 }
             }
-        }*/
+        }
 
         if (depth <= 0 || terminal) {
             //if (board.isLastMoveCapturing() || board.gamePhase == 2) // if last move was capturing launch qsearch
-            //return new Node(null, quiescenceSearch(board, alpha, beta, 5));
+                //return new Node(null, quiescenceSearch(board, alpha, beta, 5));
             //else
-            return new Node(null, evaluate(board, max, board.gamePhase, draw, mated));
+            Node node = new Node(null, evaluate(board, max, board.gamePhase, draw, mated));
+            transposition.put(zKey % transpSize, new HashEntry(zKey, depth, hashf, node));
+            return node;
         }
 
         // think this kinda works - ...
@@ -248,20 +252,20 @@ public class Minimax {
                 (int) moveValue(max, m.toString(), board.getPiece(m.getTo()).getPieceType(), board.getPiece(m.getFrom()).getPieceType(), zKey)));
         Collections.reverse(moveList);
 
+        double value = alpha;
         Move bestMove = moveList.get(0);
 
         int moves_searched = 0;
         if (max) {
-            int hashf = 1;
             double maxEval = -Double.MAX_VALUE;
 
             for (Move move : moveList) {
+
                 board.doMove(move);
-                double value;
                 //if (moves_searched >= 10 && depth >= 3) // LATE MOVE REDUCTION
-                //value = minimax(board, depth - 3, alpha, beta, false, true).score;
+                    //value = minimax(board, depth - 3, alpha, beta, false, true).score;
                 //else
-                value = minimax(board, depth - 1, alpha, beta, false, true).score;
+                    value = minimax(board, depth - 1, alpha, beta, false, true).score;
 
                 /*boolean boardCanPrune = value < higherBound && move.getPromotion() == Piece.NONE && !board.isKingAttacked();
 
@@ -284,7 +288,6 @@ public class Minimax {
                     value += depth;
 
                 if (value > maxEval) {
-                    hashf = 0;
                     maxEval = value;
                     bestMove = move;
                 }
@@ -292,29 +295,29 @@ public class Minimax {
                 alpha = Math.max(alpha, maxEval);
 
                 moves_searched++;
-                if (beta <= alpha)
+                if (beta <= alpha) {
+                    hashf = 1;
                     break;
+                }
 
                 board.undoMove();
             }
 
             Node node = new Node(bestMove, maxEval);
-            if (bestMove != null)
-                transposition.put(zKey % transpSize, new HashEntry(zKey, depth, hashf, node));
+            transposition.put(zKey % transpSize, new HashEntry(zKey, depth, hashf, node));
             return node;
 
         } else {
-
-            int hashf = 2;
             double minEval = Double.MAX_VALUE;
 
             for (Move move : moveList) {
+
                 board.doMove(move);
-                double value;
                 //if (moves_searched >= 10 && depth > 3) // LATE MOVE REDUCTION
-                //value = minimax(board, depth - 3, alpha, beta, true, true).score;
-                //else
-                value = minimax(board, depth - 1, alpha, beta, true, true).score;
+                    //value = minimax(board, depth - 3, alpha, beta, true, true).score;
+                  //else
+                    value = minimax(board, depth - 1, alpha, beta, true, true).score;
+                board.undoMove();
 
                 /*boolean boardCanPrune = value > lowerBound && move.getPromotion() == Piece.NONE && !board.isKingAttacked();
 
@@ -337,7 +340,6 @@ public class Minimax {
                     value -= depth;
 
                 if (value < minEval) {
-                    hashf = 0;
                     minEval = value;
                     bestMove = move;
                 }
@@ -345,15 +347,16 @@ public class Minimax {
                 beta = Math.min(beta, minEval);
                 moves_searched++;
 
-                if (beta <= alpha)
+                if (beta <= alpha) {
+                    hashf = 2;
                     break;
+                }
 
                 board.undoMove();
             }
 
             Node node = new Node(bestMove, minEval);
-            if (bestMove != null)
-                transposition.put(zKey % transpSize, new HashEntry(zKey, depth, hashf, node));
+            transposition.put(zKey % transpSize, new HashEntry(zKey, depth, hashf, node));
             return node;
         }
     }
@@ -362,7 +365,7 @@ public class Minimax {
         // depth = 5 and DELTA = 2000 --> too long
 
         cpt2++;
-        double DELTA = 2000; // delta cutoff
+        double DELTA = 1500; // delta cutoff
 
         boolean max = board.getSideToMove() == Side.WHITE;
         double stand_pat = evaluate(board, max, board.gamePhase, false, false);
@@ -393,7 +396,6 @@ public class Minimax {
                 board.doMove(cap);
                 double value = quiescenceSearch(board, -beta, -alpha, depth - 1);
                 board.undoMove();
-
 
                 if (alpha < value)
                     alpha = value;
@@ -426,7 +428,7 @@ public class Minimax {
             pawnW = 2;
         } else if (phase == 1) { // middle phase
             matW = 1;
-            contW = 1;
+            contW = 10;
             pawnW = 1;
         } else if (phase == 2) { // end phase
             matW = 1;
