@@ -221,9 +221,9 @@ public class Minimax {
 
         if (depth <= 0 || terminal) {
             //if (board.isLastMoveCapturing() || board.gamePhase == 2) // if last move was capturing launch qsearch
-                //return new Node(null, quiescenceSearch(board, alpha, beta, 5));
+            //return new Node(null, quiescenceSearch(board, alpha, beta, 5));
             //else
-                return new Node(null, evaluate(board, max, board.gamePhase, draw, mated));
+            return new Node(null, evaluate(board, max, board.gamePhase, draw, mated));
         }
 
         // think this kinda works - ...
@@ -232,7 +232,7 @@ public class Minimax {
             double eval = evaluate(board, max, board.gamePhase, draw, mated);
             if (eval >= beta) {
                 board.doNullMove();
-                eval = minimax(board, depth - 2 - 1, -beta, -beta+1, !max, false).score;
+                eval = minimax(board, depth - 2 - 1, -beta, -beta + 1, !max, false).score;
                 board.undoMove();
 
                 if (eval >= beta)
@@ -259,25 +259,25 @@ public class Minimax {
                 board.doMove(move);
                 double value;
                 //if (moves_searched >= 10 && depth >= 3) // LATE MOVE REDUCTION
-                    //value = minimax(board, depth - 3, alpha, beta, false, true).score;
+                //value = minimax(board, depth - 3, alpha, beta, false, true).score;
                 //else
-                    value = minimax(board, depth - 1, alpha, beta, false, true).score;
+                value = minimax(board, depth - 1, alpha, beta, false, true).score;
 
-                board.undoMove();
+                /*boolean boardCanPrune = value < higherBound && move.getPromotion() == Piece.NONE && !board.isKingAttacked();
 
-                /*if (depth == 3 && (value + rasorFutility < alpha) && value < higherBound) {
+                if (depth == 3 && (value + rasorFutility < alpha) && boardCanPrune) {
                     System.out.println("RAZORED");
-                    break;
+                    continue;
                 }
 
-                if (depth == 2 && (value + extendedFutility < alpha) && value < higherBound) {
+                if (depth == 2 && (value + extendedFutility < alpha) && boardCanPrune) {
                     System.out.println("EXTENDED");
-                    break;
+                    continue;
                 }
 
-                if (depth == 1 && (value + frontierFutility < alpha) && value < higherBound) {
+                if (depth == 1 && (value + frontierFutility < alpha) && boardCanPrune) {
                     System.out.println("FUTILITIED and " + alpha + "and " + value + frontierFutility);
-                    break;
+                    continue;
                 }*/
 
                 if (value == higherBound)
@@ -294,6 +294,8 @@ public class Minimax {
                 moves_searched++;
                 if (beta <= alpha)
                     break;
+
+                board.undoMove();
             }
 
             Node node = new Node(bestMove, maxEval);
@@ -310,24 +312,25 @@ public class Minimax {
                 board.doMove(move);
                 double value;
                 //if (moves_searched >= 10 && depth > 3) // LATE MOVE REDUCTION
-                    //value = minimax(board, depth - 3, alpha, beta, true, true).score;
-                  //else
-                    value = minimax(board, depth - 1, alpha, beta, true, true).score;
-                board.undoMove();
+                //value = minimax(board, depth - 3, alpha, beta, true, true).score;
+                //else
+                value = minimax(board, depth - 1, alpha, beta, true, true).score;
 
-                /*if (depth == 3 && (value - rasorFutility < beta) && value > lowerBound) {
+                /*boolean boardCanPrune = value > lowerBound && move.getPromotion() == Piece.NONE && !board.isKingAttacked();
+
+                if (depth == 3 && (value - rasorFutility < beta) && boardCanPrune) {
                     System.out.println("RAZORED");
-                    break;
+                    continue;
                 }
 
-                if (depth == 2 && (value - extendedFutility < beta) && value > lowerBound) {
+                if (depth == 2 && (value - extendedFutility < beta) && boardCanPrune) {
                     System.out.println("EXTENDED");
-                    break;
+                    continue;
                 }
 
-                if (depth == 1 && (value - frontierFutility < beta) && value > lowerBound) {
+                if (depth == 1 && (value - frontierFutility < beta) && boardCanPrune) {
                     System.out.println("FUTILITIED and " + beta + " and " + (value - frontierFutility));
-                    break;
+                    continue;
                 }*/
 
                 if (value == lowerBound)
@@ -345,6 +348,7 @@ public class Minimax {
                 if (beta <= alpha)
                     break;
 
+                board.undoMove();
             }
 
             Node node = new Node(bestMove, minEval);
@@ -526,6 +530,8 @@ public class Minimax {
             //if (transposition.containsKey(zob % transpSize))
             //if (Objects.equals(transposition.get(zob % transpSize).node.move.toString(), m))
             //return 2;
+
+            // maybe only for pawns
             if (max && (m.charAt(1) < m.charAt(3)))
                 return 1;
             else if (!max && (m.charAt(1) > m.charAt(3)))
