@@ -111,12 +111,13 @@ public class UCI {
             board.updateGamePhase(1);
         }
 
+        if (fromFen)
+            board.updateGamePhase(1);
+
         if (board.isSetEndPhase()) { // transition to end phase
             board.updateGamePhase(2);
         }
 
-        if (fromFen)
-            board.updateGamePhase(1);
 
         if (board.gamePhase == 0) {
             if (board.getSideToMove() == Side.WHITE) {
@@ -164,6 +165,7 @@ public class UCI {
             totalQNodes += Minimax.cpt2;
             System.out.println("total Q nodes explored " + totalQNodes);
             System.out.println("total toc " + Minimax.toc);
+            System.out.println("Gamephase is " + board.gamePhase);
             Minimax.cpt = 0;
             Minimax.cpt2 = 0;
         }

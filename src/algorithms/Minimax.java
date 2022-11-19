@@ -268,9 +268,9 @@ public class Minimax {
 
                 board.doMove(move);
                 //if (moves_searched >= 10 && depth >= 3) // LATE MOVE REDUCTION
-                    //value = minimax(board, depth - 3, alpha, beta, false, true).score;
+                //value = minimax(board, depth - 3, alpha, beta, false, true).score;
                 //else
-                    value = minimax(board, depth - 1, alpha, beta, false, true).score;
+                value = minimax(board, depth - 1, alpha, beta, false, true).score;
 
                 /*boolean boardCanPrune = value < higherBound && move.getPromotion() == Piece.NONE && !board.isKingAttacked();
 
@@ -320,9 +320,9 @@ public class Minimax {
 
                 board.doMove(move);
                 //if (moves_searched >= 10 && depth > 3) // LATE MOVE REDUCTION
-                    //value = minimax(board, depth - 3, alpha, beta, true, true).score;
-                  //else
-                    value = minimax(board, depth - 1, alpha, beta, true, true).score;
+                //value = minimax(board, depth - 3, alpha, beta, true, true).score;
+                //else
+                value = minimax(board, depth - 1, alpha, beta, true, true).score;
 
                 /*boolean boardCanPrune = value > lowerBound && move.getPromotion() == Piece.NONE && !board.isKingAttacked();
 
@@ -373,7 +373,7 @@ public class Minimax {
         if (board.gamePhase == 2)
             //check non capturing
 
-        cpt2++;
+            cpt2++;
         double DELTA = 1500; // delta cutoff
 
         double stand_pat = evaluate(board, max, board.gamePhase, board.isDraw(), board.isMated());
@@ -559,9 +559,9 @@ public class Minimax {
                 Piece p = board.getPiece(Square.squareAt(i));
                 PieceType type = p.getPieceType();
                 if (p.getPieceSide() == Side.WHITE)
-                    materialScore += pieceValues.get(type);// + (phase == 1 ? midgamePST.get(type).get(i) : endgamePST.get(type).get(i));
+                    materialScore += pieceValues.get(type) + (phase == 1 ? midgamePST.get(type).get(i) : endgamePST.get(type).get(i));
                 else
-                    materialScore -= pieceValues.get(type);// - (phase == 1 ? midgamePST.get(type).get(63 - i) : endgamePST.get(type).get(63 - i));
+                    materialScore -= pieceValues.get(type) - (phase == 1 ? midgamePST.get(type).get(63 - i) : endgamePST.get(type).get(63 - i));
             }
         }
 
