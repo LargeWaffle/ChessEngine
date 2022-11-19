@@ -15,6 +15,7 @@ public class UCI {
 
     static boolean fromFen = false;
     static double totalNodes = 0;
+    static double totalQNodes = 0;
 
     public static String[] whiteOpen = {"g1f3", "c2c4", "g2g3", "f1g2", "e1g1"};
 
@@ -149,7 +150,7 @@ public class UCI {
         } else {
             boolean isMax = board.getSideToMove() == Side.WHITE;
             long start = System.currentTimeMillis();
-            Node bestNode = Minimax.minimax(board, 5, -Double.MAX_VALUE, Double.MAX_VALUE, isMax, true);
+            Node bestNode = Minimax.minimax(board, Minimax.MINIMAX_DEPTH, -Double.MAX_VALUE, Double.MAX_VALUE, isMax, true);
             System.out.println(System.currentTimeMillis() - start);
             System.out.println("Nodes explored " + Minimax.cpt);
             System.out.println("Q nodes explored " + Minimax.cpt2);
@@ -160,6 +161,9 @@ public class UCI {
                 System.out.println("bestmove " + bestNode.move);
             totalNodes += Minimax.cpt;
             System.out.println("total nodes explored " + totalNodes);
+            totalQNodes += Minimax.cpt2;
+            System.out.println("total Q nodes explored " + totalQNodes);
+            System.out.println("total toc " + Minimax.toc);
             Minimax.cpt = 0;
             Minimax.cpt2 = 0;
         }

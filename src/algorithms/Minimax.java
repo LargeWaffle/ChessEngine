@@ -14,7 +14,11 @@ import static java.lang.Long.min;
 
 public class Minimax {
 
+    public static final int MINIMAX_DEPTH = 5;
+    public static final int QUIESCENCE_DEPTH = 5;
     public static int transpSize = 100000;
+
+    public static int toc = 0;
 
     public static String theFEN = "3r4/P5n1/3p1PPk/4p3/P7/RPK3PN/3N3P/8 w - - 0 1";
 
@@ -224,7 +228,7 @@ public class Minimax {
         if (depth <= 0 || terminal) {
             Node node;
             if (allowNull && (board.isLastMoveCapturing() || board.gamePhase == 2)) // if last move was capturing launch qsearch
-                node = new Node(null, quiescenceSearch(board, alpha, beta, 5, max));
+                node = new Node(null, quiescenceSearch(board, alpha, beta, QUIESCENCE_DEPTH, max));
             else
                 node = new Node(null, evaluate(board, max, board.gamePhase, draw, mated));
             transposition.put(zKey % transpSize, new HashEntry(zKey, depth, hashf, node));
@@ -232,7 +236,7 @@ public class Minimax {
         }
 
         // think this kinda works - ...
-        if (board.gamePhase != 2 && allowNull && depth >= 3 && !board.isKingAttacked()) { // put here all conditions to check if its ok to nullmove
+   /*     if (board.gamePhase != 2 && allowNull && depth >= 3 && !board.isKingAttacked()) { // put here all conditions to check if its ok to nullmove
 
             double eval = evaluate(board, max, board.gamePhase, draw, mated);
             if (eval >= beta) {
@@ -243,7 +247,7 @@ public class Minimax {
                 if (eval >= beta)
                     return new Node(null, eval);
             }
-        }
+        }*/
 
         // generate children
         List<Move> moveList = board.legalMoves();
@@ -366,6 +370,9 @@ public class Minimax {
     public static double quiescenceSearch(Board board, double alpha, double beta, int depth, boolean max) {
         // depth = 5 and DELTA = 2000 --> too long
 
+        if (board.gamePhase == 2)
+            //check non capturing
+
         cpt2++;
         double DELTA = 1500; // delta cutoff
 
@@ -378,15 +385,13 @@ public class Minimax {
             if (stand_pat >= beta)
                 return stand_pat; // beta ?
 
-            if (alpha < stand_pat)
-                alpha = stand_pat;
+            alpha = Math.max(stand_pat, alpha);
 
         } else {
             if (stand_pat <= alpha)
                 return stand_pat; // alpha ?
 
-            if (beta > stand_pat)
-                beta = stand_pat;
+            beta = Math.min(stand_pat, beta);
         }
 
         List<Move> capList = board.pseudoLegalCaptures();
@@ -409,7 +414,6 @@ public class Minimax {
 
                     board.doMove(cap);
                     double value = quiescenceSearch(board, alpha, beta, depth - 1, false);
-                    //double value = quiesceMinimax(board, 3, alpha, beta, max);
                     board.undoMove();
 
                     best_val = Math.max(best_val, value);
@@ -418,11 +422,13 @@ public class Minimax {
                         return best_val; // beta ?
 
                     alpha = Math.max(best_val, alpha);
-
                 }
             }
 
-            return best_val;
+            if (best_val == -100000)
+                return stand_pat;
+            else
+                return best_val;
 
         } else {
             double best_val = 100000;
@@ -440,7 +446,7 @@ public class Minimax {
 
                     board.doMove(cap);
                     double value = quiescenceSearch(board, alpha, beta, depth - 1, true);
-                    //double value = quiesceMinimax(board, 3, alpha, beta, max);
+
                     board.undoMove();
 
                     best_val = Math.min(best_val, value);
@@ -449,164 +455,14 @@ public class Minimax {
                         return best_val; // alpha ?
 
                     beta = Math.min(best_val, beta);
-
                 }
             }
 
-            return best_val;
+            if (best_val == 100000)
+                return stand_pat;
+            else
+                return best_val;
         }
-    }
-
-    public static double quiesceMinimax(Board board, int depth, double alpha, double beta, boolean max) {
-
-        long zKey = board.getZobristKey();
-        boolean draw = board.isDraw();
-        boolean mated = board.isMated();
-        boolean terminal = draw || mated;
-        int hashf = 0;
-
-        cpt++;
-
-        if (transposition.containsKey(zKey % transpSize)) {
-            HashEntry rec = transposition.get(zKey % transpSize);
-            if (rec.zobrist == zKey) {
-                if (rec.depth >= depth) {
-                    if (rec.flag == 0)
-                        return rec.node.score;
-                    if (rec.flag == 1 && rec.node.score <= alpha) // real score >= node score
-                        return alpha;
-                    if (rec.flag == 2 && rec.node.score >= beta)
-                        return beta;
-                }
-            }
-        }
-
-        if (depth <= 0 || terminal) {
-            Node node = new Node(null, evaluate(board, max, board.gamePhase, draw, mated));
-            transposition.put(zKey % transpSize, new HashEntry(zKey, depth, hashf, node));
-            return node.score;
-        }
-
-        // generate children
-        List<Move> moveList = board.pseudoLegalCaptures();
-        moveList.removeIf(move -> !board.isMoveLegal(move, true));
-
-        if (!moveList.isEmpty()) {
-            // order the list to maximize alpha beta cutoff
-            moveList.sort(Comparator.comparingInt((Move m) ->
-                    (int) moveValue(board, m, max, m.toString(), board.getPiece(m.getTo()).getPieceType(), board.getPiece(m.getFrom()).getPieceType(), zKey)));
-            Collections.reverse(moveList);
-
-            double value = alpha;
-            Move bestMove = moveList.get(0);
-
-            int moves_searched = 0;
-            if (max) {
-                double maxEval = -Double.MAX_VALUE;
-
-                for (Move move : moveList) {
-
-                    board.doMove(move);
-                    //if (moves_searched >= 10 && depth >= 3) // LATE MOVE REDUCTION
-                    //value = minimax(board, depth - 3, alpha, beta, false, true).score;
-                    //else
-                    value = quiesceMinimax(board, depth - 1, alpha, beta, false);
-
-                /*boolean boardCanPrune = value < higherBound && move.getPromotion() == Piece.NONE && !board.isKingAttacked();
-
-                if (depth == 3 && (value + rasorFutility < alpha) && boardCanPrune) {
-                    System.out.println("RAZORED");
-                    continue;
-                }
-
-                if (depth == 2 && (value + extendedFutility < alpha) && boardCanPrune) {
-                    System.out.println("EXTENDED");
-                    continue;
-                }
-
-                if (depth == 1 && (value + frontierFutility < alpha) && boardCanPrune) {
-                    System.out.println("FUTILITIED and " + alpha + "and " + value + frontierFutility);
-                    continue;
-                }*/
-
-                    if (value == higherBound)
-                        value += depth;
-
-                    if (value > maxEval) {
-                        maxEval = value;
-                        bestMove = move;
-                    }
-
-                    alpha = Math.max(alpha, maxEval);
-
-                    board.undoMove();
-
-                    moves_searched++;
-                    if (beta <= alpha) {
-                        hashf = 1;
-                        break;
-                    }
-
-                }
-
-                Node node = new Node(bestMove, maxEval);
-                transposition.put(zKey % transpSize, new HashEntry(zKey, depth, hashf, node));
-                return maxEval;
-
-            } else {
-                double minEval = Double.MAX_VALUE;
-
-                for (Move move : moveList) {
-
-                    board.doMove(move);
-                    //if (moves_searched >= 10 && depth > 3) // LATE MOVE REDUCTION
-                    //value = minimax(board, depth - 3, alpha, beta, true, true).score;
-                    //else
-                    value = quiesceMinimax(board, depth - 1, alpha, beta, true);
-
-                /*boolean boardCanPrune = value > lowerBound && move.getPromotion() == Piece.NONE && !board.isKingAttacked();
-
-                if (depth == 3 && (value - rasorFutility < beta) && boardCanPrune) {
-                    System.out.println("RAZORED");
-                    continue;
-                }
-
-                if (depth == 2 && (value - extendedFutility < beta) && boardCanPrune) {
-                    System.out.println("EXTENDED");
-                    continue;
-                }
-
-                if (depth == 1 && (value - frontierFutility < beta) && boardCanPrune) {
-                    System.out.println("FUTILITIED and " + beta + " and " + (value - frontierFutility));
-                    continue;
-                }*/
-
-                    if (value == lowerBound)
-                        value -= depth;
-
-                    if (value < minEval) {
-                        minEval = value;
-                        bestMove = move;
-                    }
-
-                    beta = Math.min(beta, minEval);
-                    moves_searched++;
-
-                    board.undoMove();
-
-                    if (beta <= alpha) {
-                        hashf = 2;
-                        break;
-                    }
-
-                }
-
-                Node node = new Node(bestMove, minEval);
-                transposition.put(zKey % transpSize, new HashEntry(zKey, depth, hashf, node));
-                return minEval;
-            }
-        } else
-            return alpha;
     }
 
     public static double evaluate(Board board, boolean max, int phase, boolean draw, boolean mated) {
