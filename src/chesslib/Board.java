@@ -21,12 +21,7 @@ import static chesslib.Constants.emptyMove;
 import static java.lang.Character.isLowerCase;
 import static java.lang.Character.isUpperCase;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.EnumMap;
-import java.util.LinkedList;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Supplier;
 import java.util.stream.IntStream;
