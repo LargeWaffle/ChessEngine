@@ -225,7 +225,7 @@ public class Minimax {
             }
         }
 
-        if (depth <= 0 || terminal) {
+        if (depth <= 0) {
             Node node;
             if (allowNull && (board.isLastMoveCapturing() || board.gamePhase == 2)) // if last move was capturing launch qsearch
                 node = new Node(null, quiescenceSearch(board, alpha, beta, QUIESCENCE_DEPTH, max));
@@ -233,9 +233,12 @@ public class Minimax {
                 node = new Node(null, evaluate(board, max, board.gamePhase, draw, mated));
             transposition.put(zKey % transpSize, new HashEntry(zKey, depth, hashf, node));
             return node;
-        }
+        } else if (mated)
+            return new Node(null, max ? lowerBound : higherBound);
+        else if (draw)
+            return new Node(null, 0);
 
-        // think this kinda works - ...
+        // think this kinda works ... but not with quiescence
    /*     if (board.gamePhase != 2 && allowNull && depth >= 3 && !board.isKingAttacked()) { // put here all conditions to check if its ok to nullmove
 
             double eval = evaluate(board, max, board.gamePhase, draw, mated);
@@ -370,13 +373,17 @@ public class Minimax {
     public static double quiescenceSearch(Board board, double alpha, double beta, int depth, boolean max) {
         // depth = 5 and DELTA = 2000 --> too long
 
-        if (board.gamePhase == 2)
-            //check non capturing
-
-            cpt2++;
+        boolean mated = board.isMated();
+        boolean draw = board.isDraw();
+        cpt2++;
         double DELTA = 1500; // delta cutoff
 
-        double stand_pat = evaluate(board, max, board.gamePhase, board.isDraw(), board.isMated());
+        if (mated)
+            return max ? lowerBound : higherBound;
+        else if (draw)
+            return 0;
+
+        double stand_pat = evaluate(board, max, board.gamePhase, draw, mated);
 
         if (depth == 0)
             return stand_pat;
@@ -394,8 +401,14 @@ public class Minimax {
             beta = Math.min(stand_pat, beta);
         }
 
-        List<Move> capList = board.pseudoLegalCaptures();
-        capList.removeIf(move -> !board.isMoveLegal(move, true));
+        List<Move> capList;
+        if (board.gamePhase == 2)
+            capList = board.legalMoves();
+        else {
+            capList = board.pseudoLegalCaptures();
+            capList.removeIf(move -> !board.isMoveLegal(move, true));
+        }
+
 
         if (max) {
 
