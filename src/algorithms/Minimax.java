@@ -294,13 +294,14 @@ public class Minimax {
 
                 alpha = Math.max(alpha, maxEval);
 
+                board.undoMove();
+
                 moves_searched++;
                 if (beta <= alpha) {
                     hashf = 1;
                     break;
                 }
 
-                board.undoMove();
             }
 
             Node node = new Node(bestMove, maxEval);
@@ -317,7 +318,6 @@ public class Minimax {
                     //value = minimax(board, depth - 3, alpha, beta, true, true).score;
                   //else
                     value = minimax(board, depth - 1, alpha, beta, true, true).score;
-                board.undoMove();
 
                 /*boolean boardCanPrune = value > lowerBound && move.getPromotion() == Piece.NONE && !board.isKingAttacked();
 
@@ -347,12 +347,13 @@ public class Minimax {
                 beta = Math.min(beta, minEval);
                 moves_searched++;
 
+                board.undoMove();
+
                 if (beta <= alpha) {
                     hashf = 2;
                     break;
                 }
 
-                board.undoMove();
             }
 
             Node node = new Node(bestMove, minEval);
