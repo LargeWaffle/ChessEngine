@@ -15,12 +15,13 @@ import static java.lang.Long.min;
 public class Minimax {
 
     public static final int MINIMAX_DEPTH = 5;
-    public static final int QUIESCENCE_DEPTH = 5;
+    public static final int QUIESCENCE_DEPTH = 3;
     public static int transpSize = 100000;
 
     public static int toc = 0;
 
     public static String theFEN = "3r4/P5n1/3p1PPk/4p3/P7/RPK3PN/3N3P/8 w - - 0 1";
+    public static String repFEN = "b7/b3k3/7R/3n4/4B1n1/3N3N/4K3/8 w - - 0 1";
 
     public static double lowerBound = -10000.0, higherBound = 10000.0;
 
@@ -211,6 +212,13 @@ public class Minimax {
 
         cpt++;
 
+        if (mated)
+            return new Node(null, max ? lowerBound : higherBound);
+        else if (draw)
+            return new Node(null, 0);
+        else if (board.isRepetition(2))
+            return new Node(null, 0);
+
         if (transposition.containsKey(zKey % transpSize)) {
             HashEntry rec = transposition.get(zKey % transpSize);
             if (rec.zobrist == zKey) {
@@ -233,10 +241,7 @@ public class Minimax {
                 node = new Node(null, evaluate(board, max, board.gamePhase, draw, mated));
             transposition.put(zKey % transpSize, new HashEntry(zKey, depth, hashf, node));
             return node;
-        } else if (mated)
-            return new Node(null, max ? lowerBound : higherBound);
-        else if (draw)
-            return new Node(null, 0);
+        }
 
         // think this kinda works ... but not with quiescence
    /*     if (board.gamePhase != 2 && allowNull && depth >= 3 && !board.isKingAttacked()) { // put here all conditions to check if its ok to nullmove
@@ -482,6 +487,9 @@ public class Minimax {
 
         // EDGE CASES
         double score = 0.0, materialScore = 0.0, controlScore = 0.0, mobilityScore = 0.0, pawnScore = 0.0;
+
+        if (board.isRepetition())
+            System.out.println("hellooo");
 
         if (mated)
             return max ? lowerBound : higherBound;

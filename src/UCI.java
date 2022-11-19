@@ -90,92 +90,89 @@ public class UCI {
 
             input = input.substring(input.indexOf("moves") + 6);
             moves = input;
-            if (fromFen) {
-                MoveList list = new MoveList(fen);
-                list.loadFromSan(input);
-                for (Move mv : list) {
-                    board.doMove(mv);
-                }
-            } else {
-                MoveList list = new MoveList();
-                list.loadFromSan(input);
-                board.loadFromFen(list.getFen());
-            }
+            MoveList list;
+            if (fromFen)
+                list = new MoveList(fen);
+            else
+                list = new MoveList();
 
+            list.loadFromSan(input);
+            for (Move mv : list)
+                board.doMove(mv);
         }
     }
 
-    public static void inputGo() {
+        public static void inputGo () {
 
-        if (board.gamePhase != 1 && board.getMoveCounter() == 6) { // transition to middle phase
-            board.updateGamePhase(1);
-        }
+            if (board.gamePhase != 1 && board.getMoveCounter() == 6) { // transition to middle phase
+                board.updateGamePhase(1);
+            }
 
-        if (fromFen)
-            board.updateGamePhase(1);
+            if (fromFen)
+                board.updateGamePhase(1);
 
-        if (board.isSetEndPhase()) { // transition to end phase
-            board.updateGamePhase(2);
-        }
+            if (board.isSetEndPhase()) { // transition to end phase
+                board.updateGamePhase(2);
+            }
 
 
-        if (board.gamePhase == 0) {
-            if (board.getSideToMove() == Side.WHITE) {
-                if (board.getMoveCounter() != 2) {
-                    System.out.println("bestmove " + whiteOpen[board.getMoveCounter() - 1]);
-                } else {
-                    boolean hasPiece = false;
-                    for (Square sq : new Square[]{Square.E5, Square.G5}) {
-                        if (board.getPiece(sq) != Piece.NONE)
-                            hasPiece = true;
-                    }
-                    if (!hasPiece) {
+            if (board.gamePhase == 0) {
+                if (board.getSideToMove() == Side.WHITE) {
+                    if (board.getMoveCounter() != 2) {
                         System.out.println("bestmove " + whiteOpen[board.getMoveCounter() - 1]);
-                    } else { // GERE LE CAS OU L'AUTRE DONNE PIECE
+                    } else {
+                        boolean hasPiece = false;
+                        for (Square sq : new Square[]{Square.E5, Square.G5}) {
+                            if (board.getPiece(sq) != Piece.NONE)
+                                hasPiece = true;
+                        }
+                        if (!hasPiece) {
+                            System.out.println("bestmove " + whiteOpen[board.getMoveCounter() - 1]);
+                        } else { // GERE LE CAS OU L'AUTRE DONNE PIECE
+                            board.updateGamePhase(1);
+                            inputGo();
+                        }
+                    }
+                } else {
+                    List<String> mlist = List.of(moves.split(" "));
+                    st.search(StartTree.tree, mlist);
+                    if (st.tree_move == null) { // GERE LE CAS OU L'AUTRE DONNE PIECE
                         board.updateGamePhase(1);
                         inputGo();
-                    }
+                    } else
+                        System.out.println("bestmove " + st.tree_move);
+
+                    if (st.phase1)
+                        board.updateGamePhase(1);
                 }
             } else {
-                List<String> mlist = List.of(moves.split(" "));
-                st.search(StartTree.tree, mlist);
-                if (st.tree_move == null) { // GERE LE CAS OU L'AUTRE DONNE PIECE
-                    board.updateGamePhase(1);
-                    inputGo();
-                } else
-                    System.out.println("bestmove " + st.tree_move);
-
-                if (st.phase1)
-                    board.updateGamePhase(1);
+                boolean isMax = board.getSideToMove() == Side.WHITE;
+                long start = System.currentTimeMillis();
+                Node bestNode = Minimax.minimax(board, Minimax.MINIMAX_DEPTH, -Double.MAX_VALUE, Double.MAX_VALUE, isMax, true);
+                System.out.println(System.currentTimeMillis() - start);
+                System.out.println("Nodes explored " + Minimax.cpt);
+                System.out.println("Q nodes explored " + Minimax.cpt2);
+                System.out.println("bestscore " + bestNode.score);
+                if (bestNode.move == null)
+                    System.out.println("bestmove " + board.legalMoves().get(0));
+                else
+                    System.out.println("bestmove " + bestNode.move);
+                totalNodes += Minimax.cpt;
+                System.out.println("total nodes explored " + totalNodes);
+                totalQNodes += Minimax.cpt2;
+                System.out.println("total Q nodes explored " + totalQNodes);
+                System.out.println("total toc " + Minimax.toc);
+                System.out.println("Gamephase is " + board.gamePhase);
+                Minimax.cpt = 0;
+                Minimax.cpt2 = 0;
             }
-        } else {
-            boolean isMax = board.getSideToMove() == Side.WHITE;
-            long start = System.currentTimeMillis();
-            Node bestNode = Minimax.minimax(board, Minimax.MINIMAX_DEPTH, -Double.MAX_VALUE, Double.MAX_VALUE, isMax, true);
-            System.out.println(System.currentTimeMillis() - start);
-            System.out.println("Nodes explored " + Minimax.cpt);
-            System.out.println("Q nodes explored " + Minimax.cpt2);
-            System.out.println("bestscore " + bestNode.score);
-            if (bestNode.move == null)
-                System.out.println("bestmove " + board.legalMoves().get(0));
-            else
-                System.out.println("bestmove " + bestNode.move);
-            totalNodes += Minimax.cpt;
-            System.out.println("total nodes explored " + totalNodes);
-            totalQNodes += Minimax.cpt2;
-            System.out.println("total Q nodes explored " + totalQNodes);
-            System.out.println("total toc " + Minimax.toc);
-            System.out.println("Gamephase is " + board.gamePhase);
-            Minimax.cpt = 0;
-            Minimax.cpt2 = 0;
+        }
+
+        public static void inputQuit () {
+            System.exit(0);
+        }
+
+        public static void inputPrint () {
+
         }
     }
-
-    public static void inputQuit() {
-        System.exit(0);
-    }
-
-    public static void inputPrint() {
-
-    }
-}
