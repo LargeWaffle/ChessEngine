@@ -58,9 +58,9 @@ public class Minimax {
 
     public static Map<Long, HashEntry> transposition = new HashMap<>(transpSize);
 
-    public static double frontierFutility = pieceValues.get(PieceType.PAWN) * 1.2;
-    public static double extendedFutility = pieceValues.get(PieceType.ROOK);
-    public static double rasorFutility = pieceValues.get(PieceType.QUEEN);
+    public static double frontierFutility = 100;
+    public static double extendedFutility = 500;
+    public static double rasorFutility = 900;
     public static double cpt = 0;
     public static double cpt2 = 0;
     public static List<Integer> pawnMiddleTable = Arrays.asList(
@@ -275,27 +275,35 @@ public class Minimax {
             for (Move move : moveList) {
 
                 board.doMove(move);
+
+                /*double fastValue = evaluate(board, true, board.gamePhase, board.isDraw(), board.isMated());
+                PieceType atkPiece = board.getPiece(move.getTo()).getPieceType();
+
+                boolean boardCanPrune = fastValue < higherBound && move.getPromotion() == Piece.NONE
+                        && atkPiece != PieceType.KING && !board.isKingAttacked();
+
+                if (depth == 3 && (fastValue + rasorFutility <= alpha) && boardCanPrune) {
+                    //System.out.println("MAX RAZORED");
+                    board.undoMove();
+                    continue;
+                }
+
+                if (depth == 2 && (fastValue + extendedFutility <= alpha) && boardCanPrune) {
+                    //System.out.println("MAX EXTENDED");
+                    board.undoMove();
+                    continue;
+                }
+
+                if (depth == 1 && (fastValue + frontierFutility <= alpha) && boardCanPrune) {
+                    //System.out.println("MAX FUTILITIED ");
+                    board.undoMove();
+                    continue;
+                }*/
+
                 //if (moves_searched >= 10 && depth >= 3) // LATE MOVE REDUCTION
                 //value = minimax(board, depth - 3, alpha, beta, false, true).score;
                 //else
                 value = minimax(board, depth - 1, alpha, beta, false, true).score;
-
-                /*boolean boardCanPrune = value < higherBound && move.getPromotion() == Piece.NONE && !board.isKingAttacked();
-
-                if (depth == 3 && (value + rasorFutility < alpha) && boardCanPrune) {
-                    System.out.println("RAZORED");
-                    continue;
-                }
-
-                if (depth == 2 && (value + extendedFutility < alpha) && boardCanPrune) {
-                    System.out.println("EXTENDED");
-                    continue;
-                }
-
-                if (depth == 1 && (value + frontierFutility < alpha) && boardCanPrune) {
-                    System.out.println("FUTILITIED and " + alpha + "and " + value + frontierFutility);
-                    continue;
-                }*/
 
                 if (value == higherBound)
                     value += depth;
@@ -310,6 +318,7 @@ public class Minimax {
                 board.undoMove();
 
                 moves_searched++;
+
                 if (beta <= alpha) {
                     hashf = 1;
                     break;
@@ -325,29 +334,36 @@ public class Minimax {
             double minEval = Double.MAX_VALUE;
 
             for (Move move : moveList) {
-
                 board.doMove(move);
+
+                /*double fastValue = evaluate(board, false, board.gamePhase, board.isDraw(), board.isMated());
+                PieceType atkPiece = board.getPiece(move.getTo()).getPieceType();
+
+                boolean boardCanPrune = fastValue > lowerBound && move.getPromotion() == Piece.NONE
+                        && atkPiece != PieceType.KING && !board.isKingAttacked();
+
+                if (depth == 3 && (fastValue - rasorFutility > beta) && boardCanPrune) {
+                    //System.out.println("MIN RAZORED");
+                    board.undoMove();
+                    continue;
+                }
+
+                if (depth == 2 && (fastValue - extendedFutility > beta) && boardCanPrune) {
+                    //System.out.println("MIN EXTENDED");
+                    board.undoMove();
+                    continue;
+                }
+
+                if (depth == 1 && (fastValue - frontierFutility > beta) && boardCanPrune) {
+                    //System.out.println("MIN FUTILITIED");
+                    board.undoMove();
+                    continue;
+                }*/
+
                 //if (moves_searched >= 10 && depth > 3) // LATE MOVE REDUCTION
                 //value = minimax(board, depth - 3, alpha, beta, true, true).score;
                 //else
                 value = minimax(board, depth - 1, alpha, beta, true, true).score;
-
-                /*boolean boardCanPrune = value > lowerBound && move.getPromotion() == Piece.NONE && !board.isKingAttacked();
-
-                if (depth == 3 && (value - rasorFutility < beta) && boardCanPrune) {
-                    System.out.println("RAZORED");
-                    continue;
-                }
-
-                if (depth == 2 && (value - extendedFutility < beta) && boardCanPrune) {
-                    System.out.println("EXTENDED");
-                    continue;
-                }
-
-                if (depth == 1 && (value - frontierFutility < beta) && boardCanPrune) {
-                    System.out.println("FUTILITIED and " + beta + " and " + (value - frontierFutility));
-                    continue;
-                }*/
 
                 if (value == lowerBound)
                     value -= depth;
