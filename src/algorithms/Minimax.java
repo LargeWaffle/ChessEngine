@@ -511,7 +511,7 @@ public class Minimax {
         } else if (phase == 2) { // end phase
             matW = 1;
             contW = 0;
-            pawnW = 0;
+            pawnW = 1;
         }
 
         // Material evaluation
@@ -611,7 +611,7 @@ public class Minimax {
         board.undoMove();
 
         if (vic == null) {
-            
+
             if (move.getPromotion() != Piece.NONE)
                 return 3;
 
