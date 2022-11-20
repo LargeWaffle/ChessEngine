@@ -609,7 +609,12 @@ public class Minimax {
         board.doMove(move);
         long z = board.getZobristKey();
         board.undoMove();
+
         if (vic == null) {
+            
+            if (move.getPromotion() != Piece.NONE)
+                return 3;
+
             if (transposition.containsKey(z % transpSize))
                 return 2;
 

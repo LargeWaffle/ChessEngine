@@ -1277,47 +1277,51 @@ public class Board implements Cloneable, BoardEvent {
                 }
             }
         }
-        if (fromType.equals(PieceType.KING)) {
-            if (squareAttackedBy(move.getTo(), side.flip()) != 0L) {
+        if (fromType != null) {
+            if (fromType.equals(PieceType.KING)) {
+                if (squareAttackedBy(move.getTo(), side.flip()) != 0L) {
+                    return false;
+                }
+            }
+            Square kingSq = (fromType.equals(PieceType.KING) ?
+                    move.getTo() : getKingSquare(side));
+            Side other = side.flip();
+            long moveTo = move.getTo().getBitboard();
+            long moveFrom = move.getFrom().getBitboard();
+            long ep = getEnPassantTarget() != Square.NONE && move.getTo() == getEnPassant() &&
+                    (fromType.equals(PieceType.PAWN)) ? getEnPassantTarget().getBitboard() : 0;
+            long allPieces = (getBitboard() ^ moveFrom ^ ep) | moveTo;
+
+            long bishopAndQueens = ((getBitboard(Piece.make(other, PieceType.BISHOP)) |
+                    getBitboard(Piece.make(other, PieceType.QUEEN)))) & ~moveTo;
+
+            if (bishopAndQueens != 0L &&
+                    (Bitboard.getBishopAttacks(allPieces, kingSq) & bishopAndQueens) != 0L) {
                 return false;
             }
-        }
-        Square kingSq = (fromType.equals(PieceType.KING) ?
-                move.getTo() : getKingSquare(side));
-        Side other = side.flip();
-        long moveTo = move.getTo().getBitboard();
-        long moveFrom = move.getFrom().getBitboard();
-        long ep = getEnPassantTarget() != Square.NONE && move.getTo() == getEnPassant() &&
-                (fromType.equals(PieceType.PAWN)) ? getEnPassantTarget().getBitboard() : 0;
-        long allPieces = (getBitboard() ^ moveFrom ^ ep) | moveTo;
 
-        long bishopAndQueens = ((getBitboard(Piece.make(other, PieceType.BISHOP)) |
-                getBitboard(Piece.make(other, PieceType.QUEEN)))) & ~moveTo;
+            long rookAndQueens = ((getBitboard(Piece.make(other, PieceType.ROOK)) |
+                    getBitboard(Piece.make(other, PieceType.QUEEN)))) & ~moveTo;
 
-        if (bishopAndQueens != 0L &&
-                (Bitboard.getBishopAttacks(allPieces, kingSq) & bishopAndQueens) != 0L) {
+            if (rookAndQueens != 0L &&
+                    (Bitboard.getRookAttacks(allPieces, kingSq) & rookAndQueens) != 0L) {
+                return false;
+            }
+
+            long knights = (getBitboard(Piece.make(other, PieceType.KNIGHT))) & ~moveTo;
+
+            if (knights != 0L &&
+                    (Bitboard.getKnightAttacks(kingSq, allPieces) & knights) != 0L) {
+                return false;
+            }
+
+            long pawns = (getBitboard(Piece.make(other, PieceType.PAWN))) & ~moveTo & ~ep;
+
+            return pawns == 0L ||
+                    (Bitboard.getPawnAttacks(side, kingSq) & pawns) == 0L;
+        } else {
             return false;
         }
-
-        long rookAndQueens = ((getBitboard(Piece.make(other, PieceType.ROOK)) |
-                getBitboard(Piece.make(other, PieceType.QUEEN)))) & ~moveTo;
-
-        if (rookAndQueens != 0L &&
-                (Bitboard.getRookAttacks(allPieces, kingSq) & rookAndQueens) != 0L) {
-            return false;
-        }
-
-        long knights = (getBitboard(Piece.make(other, PieceType.KNIGHT))) & ~moveTo;
-
-        if (knights != 0L &&
-                (Bitboard.getKnightAttacks(kingSq, allPieces) & knights) != 0L) {
-            return false;
-        }
-
-        long pawns = (getBitboard(Piece.make(other, PieceType.PAWN))) & ~moveTo & ~ep;
-
-        return pawns == 0L ||
-                (Bitboard.getPawnAttacks(side, kingSq) & pawns) == 0L;
     }
 
     /**
