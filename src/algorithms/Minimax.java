@@ -621,7 +621,7 @@ public class Minimax {
     public static int moveValue(Piece prom, boolean max, String m, PieceType vic, PieceType atk, boolean isCap) {
 
         if (!isCap && vic == null) {
-            if (prom != Piece.NONE)
+            if (!Piece.NONE.equals(prom))
                 return 2;
 
             // maybe only for pawns
@@ -629,7 +629,8 @@ public class Minimax {
                 return 1;
             else if (!max && (m.charAt(1) > m.charAt(3)))
                 return 1;
-        } else // MVV/LVA ordering : highest
+        }
+        if (vic != null)// MVV/LVA ordering : highest
             return vic_atk_val[pieceIndex.get(vic)][pieceIndex.get(atk)];
 
         return 0;
