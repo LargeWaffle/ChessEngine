@@ -237,7 +237,7 @@ public class Minimax {
 
         if (depth <= 0) {
             Node node;
-            if (isCap) // if last move was capturing launch a quiescence search
+            if (isCap) // if last move was capturing launch a quiescence search to stabilize
                 node = new Node(null, quiescenceSearch(board, alpha, beta, QUIESCENCE_DEPTH, max));
             else
                 node = new Node(null, evaluate(board, gamePhase));
@@ -250,9 +250,9 @@ public class Minimax {
         }
 
         // this kinda works ... but not with quiescence (add allowNull in minimax)
-   /*     if (gamePhase != 2 && allowNull && depth >= 3 && !board.isKingAttacked()) { // put here all conditions to check if its ok to nullmove
+   /*   if (gamePhase != 2 && allowNull && depth >= 3 && !board.isKingAttacked()) { // put here all conditions to check if its ok to nullmove
 
-            double eval = evaluate(board, max, board.gamePhase, draw, mated);
+            double eval = evaluate(board, gamePhase);
             if (eval >= beta) {
                 board.doNullMove();
                 eval = minimax(board, depth - 2 - 1, -beta, -beta + 1, !max, false).score;
@@ -280,9 +280,9 @@ public class Minimax {
                 board.doMove(move);
                 PieceType atkPiece = board.getPiece(move.getTo()).getPieceType();
 
-                double fastValue = evaluate(board, gamePhase) - alpha;
+                double fastValue = fastEval(board, gamePhase) - alpha;
 
-                boolean boardCanPrune = fastValue < higherBound && Piece.NONE.equals(move.getPromotion())
+                boolean boardCanPrune = fastValue < (higherBound + alpha) && Piece.NONE.equals(move.getPromotion())
                         && !PieceType.KING.equals(atkPiece) && !board.isKingAttacked();
 
                 if (depth <= 3) {
@@ -336,9 +336,9 @@ public class Minimax {
 
                 PieceType atkPiece = board.getPiece(move.getTo()).getPieceType();
 
-                double fastValue = evaluate(board, gamePhase) - beta;
+                double fastValue = fastEval(board, gamePhase) - beta;
 
-                boolean boardCanPrune = fastValue > lowerBound && Piece.NONE.equals(move.getPromotion())
+                boolean boardCanPrune = fastValue > (lowerBound + beta) && Piece.NONE.equals(move.getPromotion())
                         && !PieceType.KING.equals(atkPiece) && !board.isKingAttacked();
 
                 if (depth <= 3) {
@@ -564,7 +564,6 @@ public class Minimax {
 
 
         // Material evaluation
-
         for (int i = 0; i < 64; i++) {
             if (((1L << i) & bboard) != 0L) {
                 Piece p = board.getPiece(Square.squareAt(i));
@@ -586,34 +585,28 @@ public class Minimax {
                 controlScore -= 1;
         }
 
-
-
-/* promoting kinda patch
-        int wPieces = 0;
-        int bPieces = 0;
-
-        if (phase == 2) {
-
-            char[] fen_char = board.getFen().split(" ")[0].toCharArray();
-
-            for (char fc : fen_char) {
-                if (isUpperCase(fc))
-                    if (fc != 'K' && fc != 'P')
-                        wPieces++;
-                if (isLowerCase(fc))
-                    if (fc != 'k' && fc != 'p')
-                        bPieces++;
-            }
-        }*/
-
         // Tapered evaluation
         score = matW * materialScore + contW * controlScore - pawnW * pawnScore;
-/*
-        if (wPieces == 0 && bPieces != 0)
-            score -= 500;
-        if (wPieces != 0 && bPieces == 0)
-            score += 500;
-*/
+
+        return score;
+    }
+
+    public static double fastEval(Board board, int phase) {
+
+        double score = 0;
+        long bboard = board.getBitboard();
+
+        for (int i = 0; i < 64; i++) {
+            if (((1L << i) & bboard) != 0L) {
+                Piece p = board.getPiece(Square.squareAt(i));
+                PieceType type = p.getPieceType();
+                if (p.getPieceSide() == Side.WHITE)
+                    score += pieceValues.get(type) + (phase == 1 ? midgamePST.get(type).get(i) : endgamePST.get(type).get(i));
+                else
+                    score -= pieceValues.get(type) - (phase == 1 ? midgamePST.get(type).get(63 - i) : endgamePST.get(type).get(63 - i));
+            }
+        }
+
         return score;
     }
 
