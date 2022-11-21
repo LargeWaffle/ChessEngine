@@ -279,30 +279,30 @@ public class Minimax {
 
                 board.doMove(move);
                 PieceType atkPiece = board.getPiece(move.getTo()).getPieceType();
-/*
-                double fastValue = evaluate(board, gamePhase);
+
+                double fastValue = evaluate(board, gamePhase) - alpha;
 
                 boolean boardCanPrune = fastValue < higherBound && Piece.NONE.equals(move.getPromotion())
                         && !PieceType.KING.equals(atkPiece) && !board.isKingAttacked();
 
-                if (depth == 3 && (fastValue + rasorFutility <= alpha) && boardCanPrune) {
-                    //System.out.println("MAX RAZORED");
-                    board.undoMove();
-                    continue;
+                if (depth <= 3) {
+                    if (depth == 3 && (fastValue >= rasorFutility) && boardCanPrune) {
+                        board.undoMove();
+                        continue;
+                    }
+
+                    if (depth == 2 && (fastValue >= extendedFutility) && boardCanPrune) {
+                        board.undoMove();
+                        continue;
+                    }
+
+                    if (depth == 1 && (fastValue >= frontierFutility) && boardCanPrune) {
+                        board.undoMove();
+                        continue;
+                    }
                 }
 
-                if (depth == 2 && (fastValue + extendedFutility <= alpha) && boardCanPrune) {
-                    //System.out.println("MAX EXTENDED");
-                    board.undoMove();
-                    continue;
-                }
 
-                if (depth == 1 && (fastValue + frontierFutility <= alpha) && boardCanPrune) {
-                    //System.out.println("MAX FUTILITIED ");
-                    board.undoMove();
-                    continue;
-                }
-*/
                 double value = minimax(board, depth - 1, alpha, beta, false, !PieceType.NONE.equals(atkPiece)).score;
 
                 if (value == higherBound)
@@ -335,30 +335,29 @@ public class Minimax {
                 board.doMove(move);
 
                 PieceType atkPiece = board.getPiece(move.getTo()).getPieceType();
-/*
-                double fastValue = evaluate(board, gamePhase);
+
+                double fastValue = evaluate(board, gamePhase) - beta;
 
                 boolean boardCanPrune = fastValue > lowerBound && Piece.NONE.equals(move.getPromotion())
                         && !PieceType.KING.equals(atkPiece) && !board.isKingAttacked();
 
-                if (depth == 3 && (fastValue - rasorFutility > beta) && boardCanPrune) {
-                    //System.out.println("MIN RAZORED");
-                    board.undoMove();
-                    continue;
+                if (depth <= 3) {
+                    if (depth == 3 && (fastValue >= rasorFutility) && boardCanPrune) {
+                        board.undoMove();
+                        continue;
+                    }
+
+                    if (depth == 2 && (fastValue >= extendedFutility) && boardCanPrune) {
+                        board.undoMove();
+                        continue;
+                    }
+
+                    if (depth == 1 && (fastValue >= frontierFutility) && boardCanPrune) {
+                        board.undoMove();
+                        continue;
+                    }
                 }
 
-                if (depth == 2 && (fastValue - extendedFutility > beta) && boardCanPrune) {
-                    //System.out.println("MIN EXTENDED");
-                    board.undoMove();
-                    continue;
-                }
-
-                if (depth == 1 && (fastValue - frontierFutility > beta) && boardCanPrune) {
-                    //System.out.println("MIN FUTILITIED");
-                    board.undoMove();
-                    continue;
-                }
-*/
                 double value = minimax(board, depth - 1, alpha, beta, true, !PieceType.NONE.equals(atkPiece)).score;
 
                 if (value == lowerBound)
@@ -415,7 +414,6 @@ public class Minimax {
         }
 
         List<Move> capList = board.pseudoLegalCaptures();
-        // add promotions to queen to the list
 
         if (capList.isEmpty())
             return stand_pat;
