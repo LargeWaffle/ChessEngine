@@ -204,19 +204,18 @@ public class Minimax {
 
     public static Node minimax(Board board, int depth, double alpha, double beta, boolean max, boolean allowNull) {
 
-        long zKey = board.getZobristKey();
-        boolean draw = board.isDraw();
-        boolean mated = board.isMated();
-        int hashf = 0;
-
         cpt++;
+        int gamePhase = board.gamePhase;
 
-        if (mated)
+        if (board.isMated())
             return new Node(null, max ? lowerBound : higherBound);
-        else if (draw)
+        else if (board.isDraw())
             return new Node(null, 0);
         else if (board.isRepetition(2))
             return new Node(null, 0);
+
+        long zKey = board.getZobristKey();
+        int hashf = 0;
 
         if (transposition.containsKey(zKey % transpSize)) {
             HashEntry rec = transposition.get(zKey % transpSize);
@@ -234,16 +233,16 @@ public class Minimax {
 
         if (depth <= 0) {
             Node node;
-            if (allowNull && (board.isLastMoveCapturing() || board.gamePhase == 2)) // if last move was capturing launch qsearch maybe get rid of gamephase
+            if (allowNull && (board.isLastMoveCapturing() || gamePhase == 2)) // if last move was capturing launch qsearch maybe get rid of gamephase
                 node = new Node(null, quiescenceSearch(board, alpha, beta, QUIESCENCE_DEPTH, max));
             else
-                node = new Node(null, evaluate(board, max, board.gamePhase, draw, mated));
+                node = new Node(null, evaluate(board, gamePhase));
             transposition.put(zKey % transpSize, new HashEntry(zKey, depth, hashf, node));
             return node;
         }
 
         // this kinda works ... but not with quiescence
-   /*     if (board.gamePhase != 2 && allowNull && depth >= 3 && !board.isKingAttacked()) { // put here all conditions to check if its ok to nullmove
+   /*     if (gamePhase != 2 && allowNull && depth >= 3 && !board.isKingAttacked()) { // put here all conditions to check if its ok to nullmove
 
             double eval = evaluate(board, max, board.gamePhase, draw, mated);
             if (eval >= beta) {
@@ -261,8 +260,7 @@ public class Minimax {
 
         // order the list to maximize alpha beta cutoff
         moveList.sort(Comparator.comparingInt((Move m) ->
-                (int) moveValue(m, max, m.toString(), board.getPiece(m.getTo()).getPieceType(), board.getPiece(m.getFrom()).getPieceType())));
-        Collections.reverse(moveList);
+                moveValue(m.getPromotion(), max, m.toString(), board.getPiece(m.getTo()).getPieceType(), board.getPiece(m.getFrom()).getPieceType(), false)).reversed());
 
         double value = alpha;
         Move bestMove = moveList.get(0);
@@ -298,9 +296,6 @@ public class Minimax {
                     continue;
                 }*/
 
-                //if (moves_searched >= 10 && depth >= 3) // LATE MOVE REDUCTION
-                //value = minimax(board, depth - 3, alpha, beta, false, true).score;
-                //else
                 value = minimax(board, depth - 1, alpha, beta, false, true).score;
 
                 if (value == higherBound)
@@ -356,9 +351,6 @@ public class Minimax {
                     continue;
                 }*/
 
-                //if (moves_searched >= 10 && depth > 3) // LATE MOVE REDUCTION
-                //value = minimax(board, depth - 3, alpha, beta, true, true).score;
-                //else
                 value = minimax(board, depth - 1, alpha, beta, true, true).score;
 
                 if (value == lowerBound)
@@ -389,29 +381,27 @@ public class Minimax {
     public static double quiescenceSearch(Board board, double alpha, double beta, int depth, boolean max) {
 
         cpt2++;
-        boolean mated = board.isMated();
-        boolean draw = board.isDraw();
         double DELTA = 1500; // delta cutoff
 
-        if (mated)
+        if (board.isMated())
             return max ? lowerBound : higherBound;
-        else if (draw)
+        else if (board.isDraw())
             return 0;
 
-        double stand_pat = evaluate(board, max, board.gamePhase, draw, mated);
+        double stand_pat = evaluate(board, board.gamePhase);
 
-        if (depth == 0)
+        if (depth <= 0)
             return stand_pat;
 
         if (max) {
             if (stand_pat >= beta)
-                return stand_pat; // beta ?
+                return stand_pat;
 
             alpha = Math.max(stand_pat, alpha);
 
         } else {
             if (stand_pat <= alpha)
-                return stand_pat; // alpha ?
+                return stand_pat;
 
             beta = Math.min(stand_pat, beta);
         }
@@ -425,91 +415,72 @@ public class Minimax {
         }
 */
         capList = board.pseudoLegalCaptures();
-        capList.removeIf(move -> !board.isMoveLegal(move, true));
+
+        if (capList.isEmpty())
+            return stand_pat;
+
+        capList.sort(Comparator.comparingInt((Move m) ->
+                moveValue(m.getPromotion(), max, m.toString(), board.getPiece(m.getTo()).getPieceType(), board.getPiece(m.getFrom()).getPieceType(), true)).reversed());
 
         if (max) {
 
-            double maxEval = -Double.MAX_VALUE;;
+            double maxEval = -Double.MAX_VALUE;
 
-            if (!capList.isEmpty()) {
+            for (Move cap : capList) {
 
-                capList.sort(Comparator.comparingInt((Move m) ->
-                        (int) moveValue(m, max, m.toString(), board.getPiece(m.getTo()).getPieceType(), board.getPiece(m.getFrom()).getPieceType())));
-                Collections.reverse(capList);
+                if (!board.isMoveLegal(cap, true))
+                    continue;
 
-                for (Move cap : capList) {
+                if (stand_pat + DELTA < alpha)
+                    continue;
 
-                    if (stand_pat + DELTA < alpha)
-                        continue;
+                board.doMove(cap);
+                double value = quiescenceSearch(board, alpha, beta, depth - 1, false);
+                board.undoMove();
 
-                    board.doMove(cap);
-                    double value = quiescenceSearch(board, alpha, beta, depth - 1, false);
-                    board.undoMove();
+                maxEval = Math.max(maxEval, value);
 
-                    maxEval = Math.max(maxEval, value);
+                if (maxEval >= beta)
+                    return maxEval;
 
-                    if (maxEval >= beta)
-                        return maxEval;
-
-                    alpha = Math.max(maxEval, alpha);
-                }
+                alpha = Math.max(maxEval, alpha);
             }
 
-            if (maxEval == -Double.MAX_VALUE)
-                return stand_pat;
-            else
-                return maxEval;
+            return maxEval;
 
         } else {
             double minEval = Double.MAX_VALUE;
 
-            if (!capList.isEmpty()) {
+            for (Move cap : capList) {
 
-                capList.sort(Comparator.comparingInt((Move m) ->
-                        (int) moveValue(m, max, m.toString(), board.getPiece(m.getTo()).getPieceType(), board.getPiece(m.getFrom()).getPieceType())));
-                Collections.reverse(capList);
+                if (!board.isMoveLegal(cap, true))
+                    continue;
 
-                for (Move cap : capList) {
+                if (stand_pat + DELTA < alpha)
+                    continue;
 
-                    if (stand_pat + DELTA < alpha)
-                        continue;
+                board.doMove(cap);
+                double value = quiescenceSearch(board, alpha, beta, depth - 1, true);
 
-                    board.doMove(cap);
-                    double value = quiescenceSearch(board, alpha, beta, depth - 1, true);
+                board.undoMove();
 
-                    board.undoMove();
+                minEval = Math.min(minEval, value);
 
-                    minEval = Math.min(minEval, value);
+                if (minEval <= alpha)
+                    return minEval;
 
-                    if (minEval <= alpha)
-                        return minEval;
-
-                    beta = Math.min(minEval, beta);
-                }
+                beta = Math.min(minEval, beta);
             }
 
-            if (minEval == Double.MAX_VALUE)
-                return stand_pat;
-            else
-                return minEval;
+            return minEval;
         }
     }
 
-    public static double evaluate(Board board, boolean max, int phase, boolean draw, boolean mated) {
+    public static double evaluate(Board board, int phase) {
 
-        // EDGE CASES
-        double score = 0.0, materialScore = 0.0, controlScore = 0.0, mobilityScore = 0.0, pawnScore = 0.0;
+        double score = 0.0, materialScore = 0.0, controlScore = 0.0, pawnScore = 0.0;
 
-        if (board.isRepetition())
-            System.out.println("hellooo");
-
-        if (mated)
-            return max ? lowerBound : higherBound;
-
-        if (draw)
-            return 0.0;
-
-        int matW = 0, contW = 0, mobW = 0, pawnW = 0;
+        int matW = 0, contW = 0, pawnW = 0;
 
         // BOARD ANALYSIS
         if (phase == 0) { // opening phase
@@ -611,16 +582,13 @@ public class Minimax {
         // Tapered evaluation
         score = matW * materialScore + contW * controlScore - pawnW * pawnScore;
 
-        // scale between lowerBound and higherBound
-        //score = (score - lowerBound) / (higherBound - lowerBound);
         return score;
     }
 
-    public static float moveValue(Move move, boolean max, String m, PieceType vic, PieceType atk) {
+    public static int moveValue(Piece prom, boolean max, String m, PieceType vic, PieceType atk, boolean isCap) {
 
-        if (vic == null) {
-
-            if (move.getPromotion() != Piece.NONE)
+        if (!isCap && vic == null) {
+            if (prom != Piece.NONE)
                 return 2;
 
             // maybe only for pawns
@@ -628,7 +596,7 @@ public class Minimax {
                 return 1;
             else if (!max && (m.charAt(1) > m.charAt(3)))
                 return 1;
-        } else // victim/attacker capture : second highest
+        } else // victim/attacker capture : highest
             return vic_atk_val[pieceIndex.get(vic)][pieceIndex.get(atk)];
 
         return 0;
