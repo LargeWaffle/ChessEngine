@@ -206,7 +206,7 @@ public class Minimax {
     public Minimax() {
     }
 
-    public static Node minimax(Board board, int depth, double alpha, double beta, boolean max, boolean allowNull) {
+    public static Node minimax(Board board, int depth, double alpha, double beta, boolean max, boolean isCap) {
 
         cpt++;
         int gamePhase = board.gamePhase;
@@ -237,7 +237,7 @@ public class Minimax {
 
         if (depth <= 0) {
             Node node;
-            if (allowNull && board.isLastMoveCapturing()) // if last move was capturing launch qsearch
+            if (isCap) // if last move was capturing launch  -- in last move capturing send if it is or not before with atkPiece
                 node = new Node(null, quiescenceSearch(board, alpha, beta, QUIESCENCE_DEPTH, max));
             else
                 node = new Node(null, evaluate(board, gamePhase));
@@ -249,7 +249,7 @@ public class Minimax {
             return node;
         }
 
-        // this kinda works ... but not with quiescence
+        // this kinda works ... but not with quiescence (add allowNull in minimax)
    /*     if (gamePhase != 2 && allowNull && depth >= 3 && !board.isKingAttacked()) { // put here all conditions to check if its ok to nullmove
 
             double eval = evaluate(board, max, board.gamePhase, draw, mated);
@@ -270,7 +270,6 @@ public class Minimax {
         moveList.sort(Comparator.comparingInt((Move m) ->
                 moveValue(m.getPromotion(), max, m.toString(), board.getPiece(m.getTo()).getPieceType(), board.getPiece(m.getFrom()).getPieceType(), false)).reversed());
 
-        double value = alpha;
         Move bestMove = moveList.get(0);
 
         if (max) {
@@ -283,8 +282,8 @@ public class Minimax {
                 double fastValue = evaluate(board, gamePhase);
                 PieceType atkPiece = board.getPiece(move.getTo()).getPieceType();
 
-                boolean boardCanPrune = fastValue < higherBound && move.getPromotion() == Piece.NONE
-                        && atkPiece != PieceType.KING && !board.isKingAttacked();
+                boolean boardCanPrune = fastValue < higherBound && Piece.NONE.equals(move.getPromotion())
+                        && !PieceType.KING.equals(atkPiece) && !board.isKingAttacked();
 
                 if (depth == 3 && (fastValue + rasorFutility <= alpha) && boardCanPrune) {
                     //System.out.println("MAX RAZORED");
@@ -304,7 +303,7 @@ public class Minimax {
                     continue;
                 }
 
-                value = minimax(board, depth - 1, alpha, beta, false, true).score;
+                double value = minimax(board, depth - 1, alpha, beta, false, !PieceType.NONE.equals(atkPiece)).score;
 
                 if (value == higherBound)
                     value += depth;
@@ -338,8 +337,8 @@ public class Minimax {
                 double fastValue = evaluate(board, gamePhase);
                 PieceType atkPiece = board.getPiece(move.getTo()).getPieceType();
 
-                boolean boardCanPrune = fastValue > lowerBound && move.getPromotion() == Piece.NONE
-                        && atkPiece != PieceType.KING && !board.isKingAttacked();
+                boolean boardCanPrune = fastValue > lowerBound && Piece.NONE.equals(move.getPromotion())
+                        && !PieceType.KING.equals(atkPiece) && !board.isKingAttacked();
 
                 if (depth == 3 && (fastValue - rasorFutility > beta) && boardCanPrune) {
                     //System.out.println("MIN RAZORED");
@@ -359,7 +358,7 @@ public class Minimax {
                     continue;
                 }
 
-                value = minimax(board, depth - 1, alpha, beta, true, true).score;
+                double value = minimax(board, depth - 1, alpha, beta, true, !PieceType.NONE.equals(atkPiece)).score;
 
                 if (value == lowerBound)
                     value -= depth;
@@ -485,7 +484,7 @@ public class Minimax {
 
     public static double evaluate(Board board, int phase) {
 
-        double score = 0.0, materialScore = 0.0, controlScore = 0.0, pawnScore = 0.0;
+        double score, materialScore = 0.0, controlScore = 0.0, pawnScore = 0.0;
 
         int matW = 0, contW = 0, pawnW = 0;
 
@@ -504,7 +503,7 @@ public class Minimax {
             pawnW = 1;
         }
 
-        // Material evaluation
+        // Pawn eval
         long bboard = board.getBitboard();
 
         int w_doubled = 0, b_doubled = 0, w_blocked = 0, b_blocked = 0, w_isolated = 0, b_isolated = 0;
@@ -564,6 +563,8 @@ public class Minimax {
 
         pawnScore = w_doubled - b_doubled + w_blocked - b_blocked + w_isolated - b_isolated;
 
+
+        // Material evaluation
 
         for (int i = 0; i < 64; i++) {
             if (((1L << i) & bboard) != 0L) {
@@ -628,7 +629,7 @@ public class Minimax {
                 return 1;
             else if (!max && (m.charAt(1) > m.charAt(3)))
                 return 1;
-        } else // victim/attacker capture : highest
+        } else // MVV/LVA ordering : highest
             return vic_atk_val[pieceIndex.get(vic)][pieceIndex.get(atk)];
 
         return 0;

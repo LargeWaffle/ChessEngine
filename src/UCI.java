@@ -152,7 +152,7 @@ public class UCI {
             } else {
                 boolean isMax = board.getSideToMove() == Side.WHITE;
                 long start = System.currentTimeMillis();
-                Node bestNode = Minimax.minimax(board, Minimax.MINIMAX_DEPTH, -Double.MAX_VALUE, Double.MAX_VALUE, isMax, true);
+                Node bestNode = Minimax.minimax(board, Minimax.MINIMAX_DEPTH, -Double.MAX_VALUE, Double.MAX_VALUE, isMax, false);
                 System.out.println(System.currentTimeMillis() - start);
                 System.out.println("Nodes explored " + Minimax.cpt);
                 System.out.println("Q nodes explored " + Minimax.cpt2);
