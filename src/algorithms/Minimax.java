@@ -240,7 +240,7 @@ public class Minimax {
             if (isCap) // if last move was capturing launch a quiescence search to stabilize
                 node = new Node(null, quiescenceSearch(board, alpha, beta, QUIESCENCE_DEPTH, max));
             else
-                node = new Node(null, evaluate(board, gamePhase));
+                node = new Node(null, evaluate(board, gamePhase, alpha, beta, false));
             transposition.put(zKey % transpSize, new HashEntry(zKey, depth, hashf, node));
 
             /*if (gamePhase == 2 && (max && node.score >= 1500) || (!max && node.score <= -1500)) // not smart, low score variations in endGame
@@ -280,9 +280,9 @@ public class Minimax {
                 board.doMove(move);
                 PieceType atkPiece = board.getPiece(move.getTo()).getPieceType();
 
-                double fastValue = fastEval(board, gamePhase) - alpha;
+                double fastValue = -evaluate(board, gamePhase, alpha, beta, true) + alpha;
 
-                boolean boardCanPrune = fastValue < (higherBound + alpha) && Piece.NONE.equals(move.getPromotion())
+                boolean boardCanPrune = fastValue > (lowerBound + alpha) && Piece.NONE.equals(move.getPromotion())
                         && !PieceType.KING.equals(atkPiece) && !board.isKingAttacked();
 
                 if (depth <= 3) {
@@ -301,7 +301,6 @@ public class Minimax {
                         continue;
                     }
                 }
-
 
                 double value = minimax(board, depth - 1, alpha, beta, false, !PieceType.NONE.equals(atkPiece)).score;
 
@@ -336,9 +335,9 @@ public class Minimax {
 
                 PieceType atkPiece = board.getPiece(move.getTo()).getPieceType();
 
-                double fastValue = fastEval(board, gamePhase) - beta;
+                double fastValue = evaluate(board, gamePhase, alpha, beta, true) - beta;
 
-                boolean boardCanPrune = fastValue > (lowerBound + beta) && Piece.NONE.equals(move.getPromotion())
+                boolean boardCanPrune = fastValue > (lowerBound - beta) && Piece.NONE.equals(move.getPromotion())
                         && !PieceType.KING.equals(atkPiece) && !board.isKingAttacked();
 
                 if (depth <= 3) {
@@ -395,7 +394,7 @@ public class Minimax {
         else if (board.isDraw())
             return 0;
 
-        double stand_pat = evaluate(board, board.gamePhase);
+        double stand_pat = evaluate(board, board.gamePhase, alpha, beta, false);
 
         if (depth <= 0)
             return stand_pat;
@@ -481,11 +480,32 @@ public class Minimax {
         }
     }
 
-    public static double evaluate(Board board, int phase) {
+    public static double evaluate(Board board, int phase, double alpha, double beta, boolean lazy) {
 
-        double score, materialScore = 0.0, controlScore = 0.0, pawnScore = 0.0;
+        double score = 0, materialScore = 0, controlScore = 0, pawnScore = 0;
 
         int matW = 0, contW = 0, pawnW = 0;
+
+        int lazyMargin = 150;
+
+        // Material evaluation
+        long bboard = board.getBitboard();
+        for (int i = 0; i < 64; i++) {
+            if (((1L << i) & bboard) != 0L) {
+                Piece p = board.getPiece(Square.squareAt(i));
+                PieceType type = p.getPieceType();
+                if (p.getPieceSide() == Side.WHITE)
+                    materialScore += pieceValues.get(type) + (phase == 1 ? midgamePST.get(type).get(i) : endgamePST.get(type).get(i));
+                else
+                    materialScore -= pieceValues.get(type) - (phase == 1 ? midgamePST.get(type).get(63 - i) : endgamePST.get(type).get(63 - i));
+            }
+        }
+
+        if (lazy)
+            return materialScore;
+
+        if ((materialScore - lazyMargin > beta) || (materialScore + lazyMargin < alpha))
+            return materialScore;
 
         // BOARD ANALYSIS
         if (phase == 0) { // opening phase
@@ -498,13 +518,11 @@ public class Minimax {
             pawnW = 1;
         } else if (phase == 2) { // end phase
             matW = 1;
-            contW = 0;
+            contW = 1;
             pawnW = 1;
         }
 
         // Pawn eval
-        long bboard = board.getBitboard();
-
         int w_doubled = 0, b_doubled = 0, w_blocked = 0, b_blocked = 0, w_isolated = 0, b_isolated = 0;
         int sq, p_d, p_b, p_i;
         long copyBoard = bboard;
@@ -563,18 +581,6 @@ public class Minimax {
         pawnScore = w_doubled - b_doubled + w_blocked - b_blocked + w_isolated - b_isolated;
 
 
-        // Material evaluation
-        for (int i = 0; i < 64; i++) {
-            if (((1L << i) & bboard) != 0L) {
-                Piece p = board.getPiece(Square.squareAt(i));
-                PieceType type = p.getPieceType();
-                if (p.getPieceSide() == Side.WHITE)
-                    materialScore += pieceValues.get(type) + (phase == 1 ? midgamePST.get(type).get(i) : endgamePST.get(type).get(i));
-                else
-                    materialScore -= pieceValues.get(type) - (phase == 1 ? midgamePST.get(type).get(63 - i) : endgamePST.get(type).get(63 - i));
-            }
-        }
-
         // Control evaluation
         for (int i = 0; i < 64; i++) {
             int wCount = bitCount(board.squareAttackedBy(Square.squareAt(i), Side.WHITE));
@@ -591,24 +597,6 @@ public class Minimax {
         return score;
     }
 
-    public static double fastEval(Board board, int phase) {
-
-        double score = 0;
-        long bboard = board.getBitboard();
-
-        for (int i = 0; i < 64; i++) {
-            if (((1L << i) & bboard) != 0L) {
-                Piece p = board.getPiece(Square.squareAt(i));
-                PieceType type = p.getPieceType();
-                if (p.getPieceSide() == Side.WHITE)
-                    score += pieceValues.get(type) + (phase == 1 ? midgamePST.get(type).get(i) : endgamePST.get(type).get(i));
-                else
-                    score -= pieceValues.get(type) - (phase == 1 ? midgamePST.get(type).get(63 - i) : endgamePST.get(type).get(63 - i));
-            }
-        }
-
-        return score;
-    }
 
     public static int moveValue(Piece prom, boolean advancing, PieceType vic, PieceType atk, boolean isCap) {
 
