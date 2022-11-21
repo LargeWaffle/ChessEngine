@@ -246,7 +246,7 @@ public class Minimax {
             /*if (gamePhase == 2 && (max && node.score >= 1500) || (!max && node.score <= -1500)) // not smart, low score variations in endGame
                 depth = 2;
             else*/
-                return node;
+            return node;
         }
 
         // this kinda works ... but not with quiescence
@@ -280,7 +280,7 @@ public class Minimax {
 
                 board.doMove(move);
 
-                /*double fastValue = evaluate(board, true, board.gamePhase, board.isDraw(), board.isMated());
+                double fastValue = evaluate(board, gamePhase);
                 PieceType atkPiece = board.getPiece(move.getTo()).getPieceType();
 
                 boolean boardCanPrune = fastValue < higherBound && move.getPromotion() == Piece.NONE
@@ -302,7 +302,7 @@ public class Minimax {
                     //System.out.println("MAX FUTILITIED ");
                     board.undoMove();
                     continue;
-                }*/
+                }
 
                 value = minimax(board, depth - 1, alpha, beta, false, true).score;
 
@@ -335,7 +335,7 @@ public class Minimax {
             for (Move move : moveList) {
                 board.doMove(move);
 
-                /*double fastValue = evaluate(board, false, board.gamePhase, board.isDraw(), board.isMated());
+                double fastValue = evaluate(board, gamePhase);
                 PieceType atkPiece = board.getPiece(move.getTo()).getPieceType();
 
                 boolean boardCanPrune = fastValue > lowerBound && move.getPromotion() == Piece.NONE
@@ -357,7 +357,7 @@ public class Minimax {
                     //System.out.println("MIN FUTILITIED");
                     board.undoMove();
                     continue;
-                }*/
+                }
 
                 value = minimax(board, depth - 1, alpha, beta, true, true).score;
 
