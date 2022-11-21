@@ -9,6 +9,8 @@ import java.util.*;
 
 import static chesslib.Bitboard.bitScanForward;
 import static chesslib.Bitboard.extractLsb;
+import static java.lang.Character.isLowerCase;
+import static java.lang.Character.isUpperCase;
 import static java.lang.Long.bitCount;
 import static java.lang.Long.min;
 
@@ -22,6 +24,8 @@ public class Minimax {
 
     public static String theFEN = "3r4/P5n1/3p1PPk/4p3/P7/RPK3PN/3N3P/8 w - - 0 1";
     public static String repFEN = "b7/b3k3/7R/3n4/4B1n1/3N3N/4K3/8 w - - 0 1";
+    public static String endFEN = "5k2/p2r1p2/1p1bq2p/7Q/2PR3P/6P1/PP3PK1/R7 w - - 1 29 ";
+    public static String promotionFEN = "8/7P/3k4/8/2P1K3/8/1b3PR1/8 w - - 2 69";
 
     public static double lowerBound = -10000.0, higherBound = 10000.0;
 
@@ -30,7 +34,7 @@ public class Minimax {
             'q', -9, 'r', -5, 'n', -3, 'b', -3, 'p', -1));
 
     public static int[][] vic_atk_val = {
-            {60, 61, 62, 63, 64, 65, 0},       // victim K, attacker K, Q, R, B, N, P, None
+            {60, 61, 62, 63, 64, 65, 0}, // victim K, attacker K, Q, R, B, N, P, None
             {50, 51, 52, 53, 54, 55, 0}, // victim Q, attacker K, Q, R, B, N, P, None
             {40, 41, 42, 43, 44, 45, 0}, // victim R, attacker K, Q, R, B, N, P, None
             {30, 31, 32, 33, 34, 35, 0}, // victim B, attacker K, Q, R, B, N, P, None
@@ -94,14 +98,14 @@ public class Minimax {
             -50, -40, -30, -30, -30, -30, -40, -50);
 
     public static List<Integer> knightEndingTable = Arrays.asList(
-            0, 0, 0, 0, 0, 0, 0, 0,
-            0, 0, 0, 0, 0, 0, 0, 0,
-            0, 0, 0, 0, 0, 0, 0, 0,
-            0, 0, 0, 0, 0, 0, 0, 0,
-            0, 0, 0, 0, 0, 0, 0, 0,
-            0, 0, 0, 0, 0, 0, 0, 0,
-            0, 0, 0, 0, 0, 0, 0, 0,
-            0, 0, 0, 0, 0, 0, 0, 0);
+            -20, -20, -20, -20, -20, -20, -20, -20,
+            -20, -20, -20, -20, -20, -20, -20, -20,
+            -20, -20, -20, -20, -20, -20, -20, -20,
+            -20, -20, -20, -20, -20, -20, -20, -20,
+            -20, -20, -20, -20, -20, -20, -20, -20,
+            -20, -20, -20, -20, -20, -20, -20, -20,
+            -20, -20, -20, -20, -20, -20, -20, -20,
+            -20, -20, -20, -20, -20, -20, -20, -20);
 
     public static List<Integer> bishopMiddleTable = Arrays.asList(
             -20, -10, -10, -10, -10, -10, -10, -20,
@@ -233,12 +237,16 @@ public class Minimax {
 
         if (depth <= 0) {
             Node node;
-            if (allowNull && (board.isLastMoveCapturing() || gamePhase == 2)) // if last move was capturing launch qsearch maybe get rid of gamephase
+            if (allowNull && board.isLastMoveCapturing()) // if last move was capturing launch qsearch
                 node = new Node(null, quiescenceSearch(board, alpha, beta, QUIESCENCE_DEPTH, max));
             else
                 node = new Node(null, evaluate(board, gamePhase));
             transposition.put(zKey % transpSize, new HashEntry(zKey, depth, hashf, node));
-            return node;
+
+            /*if (gamePhase == 2 && (max && node.score >= 1500) || (!max && node.score <= -1500)) // not smart, low score variations in endGame
+                depth = 2;
+            else*/
+                return node;
         }
 
         // this kinda works ... but not with quiescence
@@ -406,15 +414,8 @@ public class Minimax {
             beta = Math.min(stand_pat, beta);
         }
 
-        List<Move> capList;
-        /*if (board.gamePhase == 2) // not sure bout this with other code in UCI
-            capList = board.legalMoves();
-        else {
-            capList = board.pseudoLegalCaptures();
-            capList.removeIf(move -> !board.isMoveLegal(move, true));
-        }
-*/
-        capList = board.pseudoLegalCaptures();
+        List<Move> capList = board.pseudoLegalCaptures();
+        // add promotions to queen to the list
 
         if (capList.isEmpty())
             return stand_pat;
@@ -446,7 +447,10 @@ public class Minimax {
                 alpha = Math.max(maxEval, alpha);
             }
 
-            return maxEval;
+            if (maxEval == -Double.MAX_VALUE)
+                return stand_pat;
+            else
+                return maxEval;
 
         } else {
             double minEval = Double.MAX_VALUE;
@@ -472,7 +476,10 @@ public class Minimax {
                 beta = Math.min(minEval, beta);
             }
 
-            return minEval;
+            if (minEval == Double.MAX_VALUE)
+                return stand_pat;
+            else
+                return minEval;
         }
     }
 
@@ -579,9 +586,34 @@ public class Minimax {
                 controlScore -= 1;
         }
 
+
+
+/* promoting kinda patch
+        int wPieces = 0;
+        int bPieces = 0;
+
+        if (phase == 2) {
+
+            char[] fen_char = board.getFen().split(" ")[0].toCharArray();
+
+            for (char fc : fen_char) {
+                if (isUpperCase(fc))
+                    if (fc != 'K' && fc != 'P')
+                        wPieces++;
+                if (isLowerCase(fc))
+                    if (fc != 'k' && fc != 'p')
+                        bPieces++;
+            }
+        }*/
+
         // Tapered evaluation
         score = matW * materialScore + contW * controlScore - pawnW * pawnScore;
-
+/*
+        if (wPieces == 0 && bPieces != 0)
+            score -= 500;
+        if (wPieces != 0 && bPieces == 0)
+            score += 500;
+*/
         return score;
     }
 

@@ -152,24 +152,7 @@ public class UCI {
             } else {
                 boolean isMax = board.getSideToMove() == Side.WHITE;
                 long start = System.currentTimeMillis();
-                Node bestNode;
-
-                // not sure bout this -- to intense way too long (check with futil tho)
-                if (board.gamePhase == 2) {
-                    char[] fen_char = board.getFen().split(" ")[0].toCharArray();
-                    int nbPieces = 0;
-                    for (char fc : fen_char) {
-                        if (isUpperCase(fc) || isLowerCase(fc))
-                            if (fc != 'p' && fc != 'P')
-                                nbPieces++;
-                    }
-                    if (nbPieces%2==1)
-                        nbPieces++;
-                    bestNode = Minimax.minimax(board, (11-nbPieces), -Double.MAX_VALUE, Double.MAX_VALUE, isMax, true);
-                    System.out.println("launched with " + (11-nbPieces));
-                }
-                else
-                    bestNode = Minimax.minimax(board, Minimax.MINIMAX_DEPTH, -Double.MAX_VALUE, Double.MAX_VALUE, isMax, true);
+                Node bestNode = Minimax.minimax(board, Minimax.MINIMAX_DEPTH, -Double.MAX_VALUE, Double.MAX_VALUE, isMax, true);
                 System.out.println(System.currentTimeMillis() - start);
                 System.out.println("Nodes explored " + Minimax.cpt);
                 System.out.println("Q nodes explored " + Minimax.cpt2);
