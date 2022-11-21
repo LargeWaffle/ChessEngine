@@ -207,7 +207,6 @@ public class Minimax {
         long zKey = board.getZobristKey();
         boolean draw = board.isDraw();
         boolean mated = board.isMated();
-        boolean terminal = draw || mated;
         int hashf = 0;
 
         cpt++;
@@ -235,7 +234,7 @@ public class Minimax {
 
         if (depth <= 0) {
             Node node;
-            if (allowNull && (board.isLastMoveCapturing() || board.gamePhase == 2)) // if last move was capturing launch qsearch
+            if (allowNull && (board.isLastMoveCapturing() || board.gamePhase == 2)) // if last move was capturing launch qsearch maybe get rid of gamephase
                 node = new Node(null, quiescenceSearch(board, alpha, beta, QUIESCENCE_DEPTH, max));
             else
                 node = new Node(null, evaluate(board, max, board.gamePhase, draw, mated));
@@ -243,7 +242,7 @@ public class Minimax {
             return node;
         }
 
-        // think this kinda works ... but not with quiescence
+        // this kinda works ... but not with quiescence
    /*     if (board.gamePhase != 2 && allowNull && depth >= 3 && !board.isKingAttacked()) { // put here all conditions to check if its ok to nullmove
 
             double eval = evaluate(board, max, board.gamePhase, draw, mated);
@@ -262,13 +261,12 @@ public class Minimax {
 
         // order the list to maximize alpha beta cutoff
         moveList.sort(Comparator.comparingInt((Move m) ->
-                (int) moveValue(board, m, max, m.toString(), board.getPiece(m.getTo()).getPieceType(), board.getPiece(m.getFrom()).getPieceType(), zKey)));
+                (int) moveValue(m, max, m.toString(), board.getPiece(m.getTo()).getPieceType(), board.getPiece(m.getFrom()).getPieceType())));
         Collections.reverse(moveList);
 
         double value = alpha;
         Move bestMove = moveList.get(0);
 
-        int moves_searched = 0;
         if (max) {
             double maxEval = -Double.MAX_VALUE;
 
@@ -316,8 +314,6 @@ public class Minimax {
                 alpha = Math.max(alpha, maxEval);
 
                 board.undoMove();
-
-                moves_searched++;
 
                 if (beta <= alpha) {
                     hashf = 1;
@@ -374,7 +370,6 @@ public class Minimax {
                 }
 
                 beta = Math.min(beta, minEval);
-                moves_searched++;
 
                 board.undoMove();
 
@@ -392,11 +387,10 @@ public class Minimax {
     }
 
     public static double quiescenceSearch(Board board, double alpha, double beta, int depth, boolean max) {
-        // depth = 5 and DELTA = 2000 --> too long
 
+        cpt2++;
         boolean mated = board.isMated();
         boolean draw = board.isDraw();
-        cpt2++;
         double DELTA = 1500; // delta cutoff
 
         if (mated)
@@ -423,22 +417,24 @@ public class Minimax {
         }
 
         List<Move> capList;
-        if (board.gamePhase == 2)
+        /*if (board.gamePhase == 2) // not sure bout this with other code in UCI
             capList = board.legalMoves();
         else {
             capList = board.pseudoLegalCaptures();
             capList.removeIf(move -> !board.isMoveLegal(move, true));
         }
-
+*/
+        capList = board.pseudoLegalCaptures();
+        capList.removeIf(move -> !board.isMoveLegal(move, true));
 
         if (max) {
 
-            double best_val = -100000;
+            double maxEval = -Double.MAX_VALUE;;
 
             if (!capList.isEmpty()) {
 
                 capList.sort(Comparator.comparingInt((Move m) ->
-                        (int) moveValue(board, m, max, m.toString(), board.getPiece(m.getTo()).getPieceType(), board.getPiece(m.getFrom()).getPieceType(), board.getZobristKey())));
+                        (int) moveValue(m, max, m.toString(), board.getPiece(m.getTo()).getPieceType(), board.getPiece(m.getFrom()).getPieceType())));
                 Collections.reverse(capList);
 
                 for (Move cap : capList) {
@@ -450,27 +446,27 @@ public class Minimax {
                     double value = quiescenceSearch(board, alpha, beta, depth - 1, false);
                     board.undoMove();
 
-                    best_val = Math.max(best_val, value);
+                    maxEval = Math.max(maxEval, value);
 
-                    if (best_val >= beta)
-                        return best_val; // beta ?
+                    if (maxEval >= beta)
+                        return maxEval;
 
-                    alpha = Math.max(best_val, alpha);
+                    alpha = Math.max(maxEval, alpha);
                 }
             }
 
-            if (best_val == -100000)
+            if (maxEval == -Double.MAX_VALUE)
                 return stand_pat;
             else
-                return best_val;
+                return maxEval;
 
         } else {
-            double best_val = 100000;
+            double minEval = Double.MAX_VALUE;
 
             if (!capList.isEmpty()) {
 
                 capList.sort(Comparator.comparingInt((Move m) ->
-                        (int) moveValue(board, m, max, m.toString(), board.getPiece(m.getTo()).getPieceType(), board.getPiece(m.getFrom()).getPieceType(), board.getZobristKey())));
+                        (int) moveValue(m, max, m.toString(), board.getPiece(m.getTo()).getPieceType(), board.getPiece(m.getFrom()).getPieceType())));
                 Collections.reverse(capList);
 
                 for (Move cap : capList) {
@@ -483,19 +479,19 @@ public class Minimax {
 
                     board.undoMove();
 
-                    best_val = Math.min(best_val, value);
+                    minEval = Math.min(minEval, value);
 
-                    if (best_val <= alpha)
-                        return best_val; // alpha ?
+                    if (minEval <= alpha)
+                        return minEval;
 
-                    beta = Math.min(best_val, beta);
+                    beta = Math.min(minEval, beta);
                 }
             }
 
-            if (best_val == 100000)
+            if (minEval == Double.MAX_VALUE)
                 return stand_pat;
             else
-                return best_val;
+                return minEval;
         }
     }
 
@@ -620,18 +616,11 @@ public class Minimax {
         return score;
     }
 
-    public static float moveValue(Board board, Move move, boolean max, String m, PieceType vic, PieceType atk, long zob) {
-
-        board.doMove(move);
-        long z = board.getZobristKey();
-        board.undoMove();
+    public static float moveValue(Move move, boolean max, String m, PieceType vic, PieceType atk) {
 
         if (vic == null) {
 
             if (move.getPromotion() != Piece.NONE)
-                return 3;
-
-            if (transposition.containsKey(z % transpSize))
                 return 2;
 
             // maybe only for pawns
