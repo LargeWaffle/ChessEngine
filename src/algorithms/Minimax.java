@@ -237,7 +237,7 @@ public class Minimax {
 
         if (depth <= 0) {
             Node node;
-            if (isCap) // if last move was capturing launch  -- in last move capturing send if it is or not before with atkPiece
+            if (isCap) // if last move was capturing launch a quiescence search
                 node = new Node(null, quiescenceSearch(board, alpha, beta, QUIESCENCE_DEPTH, max));
             else
                 node = new Node(null, evaluate(board, gamePhase));
@@ -268,7 +268,7 @@ public class Minimax {
 
         // order the list to maximize alpha beta cutoff
         moveList.sort(Comparator.comparingInt((Move m) ->
-                moveValue(m.getPromotion(), max, m.toString(), board.getPiece(m.getTo()).getPieceType(), board.getPiece(m.getFrom()).getPieceType(), false)).reversed());
+                moveValue(m.getPromotion(), m.isAdvancing(max ? Side.WHITE : Side.BLACK), board.getPiece(m.getTo()).getPieceType(), board.getPiece(m.getFrom()).getPieceType(), false)).reversed());
 
         Move bestMove = moveList.get(0);
 
@@ -278,9 +278,9 @@ public class Minimax {
             for (Move move : moveList) {
 
                 board.doMove(move);
-
-                double fastValue = evaluate(board, gamePhase);
                 PieceType atkPiece = board.getPiece(move.getTo()).getPieceType();
+/*
+                double fastValue = evaluate(board, gamePhase);
 
                 boolean boardCanPrune = fastValue < higherBound && Piece.NONE.equals(move.getPromotion())
                         && !PieceType.KING.equals(atkPiece) && !board.isKingAttacked();
@@ -302,7 +302,7 @@ public class Minimax {
                     board.undoMove();
                     continue;
                 }
-
+*/
                 double value = minimax(board, depth - 1, alpha, beta, false, !PieceType.NONE.equals(atkPiece)).score;
 
                 if (value == higherBound)
@@ -334,8 +334,9 @@ public class Minimax {
             for (Move move : moveList) {
                 board.doMove(move);
 
-                double fastValue = evaluate(board, gamePhase);
                 PieceType atkPiece = board.getPiece(move.getTo()).getPieceType();
+/*
+                double fastValue = evaluate(board, gamePhase);
 
                 boolean boardCanPrune = fastValue > lowerBound && Piece.NONE.equals(move.getPromotion())
                         && !PieceType.KING.equals(atkPiece) && !board.isKingAttacked();
@@ -357,7 +358,7 @@ public class Minimax {
                     board.undoMove();
                     continue;
                 }
-
+*/
                 double value = minimax(board, depth - 1, alpha, beta, true, !PieceType.NONE.equals(atkPiece)).score;
 
                 if (value == lowerBound)
@@ -420,7 +421,7 @@ public class Minimax {
             return stand_pat;
 
         capList.sort(Comparator.comparingInt((Move m) ->
-                moveValue(m.getPromotion(), max, m.toString(), board.getPiece(m.getTo()).getPieceType(), board.getPiece(m.getFrom()).getPieceType(), true)).reversed());
+                moveValue(m.getPromotion(), m.isAdvancing(max ? Side.WHITE : Side.BLACK), board.getPiece(m.getTo()).getPieceType(), board.getPiece(m.getFrom()).getPieceType(), true)).reversed());
 
         if (max) {
 
@@ -618,16 +619,14 @@ public class Minimax {
         return score;
     }
 
-    public static int moveValue(Piece prom, boolean max, String m, PieceType vic, PieceType atk, boolean isCap) {
+    public static int moveValue(Piece prom, boolean advancing, PieceType vic, PieceType atk, boolean isCap) {
 
         if (!isCap && vic == null) {
             if (!Piece.NONE.equals(prom))
                 return 2;
 
             // maybe only for pawns
-            if (max && (m.charAt(1) < m.charAt(3)))
-                return 1;
-            else if (!max && (m.charAt(1) > m.charAt(3)))
+            if (advancing)
                 return 1;
         }
         if (vic != null)// MVV/LVA ordering : highest

@@ -184,4 +184,11 @@ public class Move implements BoardEvent {
         this.san = san;
     }
 
+    public boolean isAdvancing(Side side) {
+        if (side == Side.WHITE)
+            return to.ordinal() - from.ordinal() > 0;
+        else
+            return to.ordinal() - from.ordinal() < 0;
+    }
+
 }
