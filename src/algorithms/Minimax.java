@@ -290,18 +290,18 @@ public class Minimax {
                 boolean boardCanPrune = fastValue > (lowerBound + alpha) && Piece.NONE.equals(move.getPromotion())
                         && !board.isKingAttacked();
 
-                if (depth <= 3) {
-                    if (depth == 3 && (fastValue >= rasorFutility) && boardCanPrune) {
+                if (depth <= 3 && boardCanPrune) {
+                    if (depth == 3 && (fastValue >= rasorFutility)) {
                         board.undoMove();
                         continue;
                     }
 
-                    if (depth == 2 && (fastValue >= extendedFutility) && boardCanPrune) {
+                    if (depth == 2 && (fastValue >= extendedFutility)) {
                         board.undoMove();
                         continue;
                     }
 
-                    if (depth == 1 && (fastValue >= frontierFutility) && boardCanPrune) {
+                    if (depth == 1 && (fastValue >= frontierFutility)) {
                         board.undoMove();
                         continue;
                     }
@@ -353,18 +353,18 @@ public class Minimax {
                 boolean boardCanPrune = fastValue > (lowerBound - beta) && Piece.NONE.equals(move.getPromotion())
                         && !board.isKingAttacked();
 
-                if (depth <= 3) {
-                    if (depth == 3 && (fastValue >= rasorFutility) && boardCanPrune) {
+                if (depth <= 3 && boardCanPrune) {
+                    if (depth == 3 && (fastValue >= rasorFutility)) {
                         board.undoMove();
                         continue;
                     }
 
-                    if (depth == 2 && (fastValue >= extendedFutility) && boardCanPrune) {
+                    if (depth == 2 && (fastValue >= extendedFutility)) {
                         board.undoMove();
                         continue;
                     }
 
-                    if (depth == 1 && (fastValue >= frontierFutility) && boardCanPrune) {
+                    if (depth == 1 && (fastValue >= frontierFutility)) {
                         board.undoMove();
                         continue;
                     }
