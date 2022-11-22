@@ -170,6 +170,7 @@ public class UCI {
                 Minimax.cpt = 0;
                 Minimax.cpt2 = 0;
                 Arrays.stream(Minimax.killerMoves).forEach(x -> Arrays.fill(x, null));
+                Minimax.historyMoves.clear();
             }
         }
 

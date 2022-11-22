@@ -27,6 +27,7 @@ public class Minimax {
     public static String repFEN = "b7/b3k3/7R/3n4/4B1n1/3N3N/4K3/8 w - - 0 1";
     public static String endFEN = "5k2/p2r1p2/1p1bq2p/7Q/2PR3P/6P1/PP3PK1/R7 w - - 1 29 ";
     public static String promotionFEN = "8/7P/3k4/8/2P1K3/8/1b3PR1/8 w - - 2 69";
+    public static String killerFEN = "4r1k1/p4p1p/1p3qpB/3b4/1P1R4/P1Q5/5PPP/6K1 w - - 0 1";
 
     public static double lowerBound = -10000.0, higherBound = 10000.0;
 
@@ -62,6 +63,8 @@ public class Minimax {
             PieceType.NONE, 6));
 
     public static Map<Long, HashEntry> transposition = new HashMap<>(transpSize);
+
+    public static Map<Integer, Integer> historyMoves = new HashMap<>();
 
     public static Move[][] killerMoves = new Move[MINIMAX_DEPTH][2];
 
@@ -221,7 +224,7 @@ public class Minimax {
         else if (board.isRepetition(2))
             return new Node(null, 0);
 
-        long zKey = board.getZobristKey();
+        long zKey = board.getIncrementalHashKey(); // or zobrist but this seems faster
         int hashf = 0;
 
         if (transposition.containsKey(zKey % transpSize)) {
@@ -315,6 +318,11 @@ public class Minimax {
                 if (value > maxEval) {
                     maxEval = value;
                     bestMove = move;
+                    int hc = move.hashCode();
+                    if (historyMoves.containsKey(hc)) {
+                        historyMoves.put(hc, historyMoves.get(hc)+1);
+                    } else
+                        historyMoves.put(hc, 1);
                 }
 
                 alpha = Math.max(alpha, maxEval);
@@ -323,7 +331,7 @@ public class Minimax {
 
                 if (beta <= alpha) {
                     // store a non capturing killer move that is different as the one stored
-                    if (!capMove && killerMoves[depth-1][1] != move) {
+                    if (!capMove && killerMoves[depth-1][0] != move) {
                         killerMoves[depth-1][1] = killerMoves[depth-1][0];
                         killerMoves[depth-1][0] = move;
                     }
@@ -378,6 +386,11 @@ public class Minimax {
                 if (value < minEval) {
                     minEval = value;
                     bestMove = move;
+                    int hc = move.hashCode();
+                    if (historyMoves.containsKey(hc)) {
+                        historyMoves.put(hc, historyMoves.get(hc)+1);
+                    } else
+                        historyMoves.put(hc, 1);
                 }
 
                 beta = Math.min(beta, minEval);
@@ -386,7 +399,7 @@ public class Minimax {
 
                 if (beta <= alpha) {
                     // store a non capturing killer move that is different as the one stored
-                    if (!capMove && killerMoves[depth-1][1] != move) {
+                    if (!capMove && killerMoves[depth-1][0] != move) {
                         killerMoves[depth-1][1] = killerMoves[depth-1][0];
                         killerMoves[depth-1][0] = move;
                     }
@@ -619,14 +632,22 @@ public class Minimax {
 
     public static int moveValue(Move m, Piece prom, boolean advancing, PieceType vic, PieceType atk, boolean isCap, int depth) {
 
+        // put in front castles, promos, checks, king moves in the back, moving to square covered by opposite pawn to the back
+
         if (!isCap && vic == null) {
 
             if (!Piece.NONE.equals(prom))
-                return 40;
+                return pieceValues.get(prom.getPieceType());
 
-            if (m == killerMoves[depth-1][0] || m == killerMoves[depth-1][1])
+            if (m == killerMoves[depth-1][0])
+                return 3;
+            else if (m == killerMoves[depth-1][1])
                 return 2;
-
+            else {
+                int hc = m.hashCode();
+                if (historyMoves.containsKey(hc))
+                    return historyMoves.get(hc);
+            }
             // maybe only for pawns
             if (advancing)
                 return 1;
