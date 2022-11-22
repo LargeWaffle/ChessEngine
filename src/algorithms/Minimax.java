@@ -323,7 +323,7 @@ public class Minimax {
                     maxEval = value;
                     bestMove = move;
                     if (historyMoves.containsKey(hc)) {
-                        historyMoves.put(hc, historyMoves.get(hc)+1);
+                        historyMoves.put(hc, historyMoves.get(hc) + 1);
                     } else
                         historyMoves.put(hc, 1);
                 }
@@ -334,9 +334,9 @@ public class Minimax {
 
                 if (beta <= alpha) {
                     // store a non capturing killer move that is different as the one stored
-                    if (!capMove && killerMoves[depth-1][0] != hc) {
-                        killerMoves[depth-1][1] = killerMoves[depth-1][0];
-                        killerMoves[depth-1][0] = hc;
+                    if (!capMove && killerMoves[depth - 1][0] != hc) {
+                        killerMoves[depth - 1][1] = killerMoves[depth - 1][0];
+                        killerMoves[depth - 1][0] = hc;
                     }
 
                     hashf = 1;
@@ -391,7 +391,7 @@ public class Minimax {
                     minEval = value;
                     bestMove = move;
                     if (historyMoves.containsKey(hc)) {
-                        historyMoves.put(hc, historyMoves.get(hc)+1);
+                        historyMoves.put(hc, historyMoves.get(hc) + 1);
                     } else
                         historyMoves.put(hc, 1);
                 }
@@ -402,9 +402,9 @@ public class Minimax {
 
                 if (beta <= alpha) {
                     // store a non capturing killer move that is different as the one stored
-                    if (!capMove && killerMoves[depth-1][0] != hc) {
-                        killerMoves[depth-1][1] = killerMoves[depth-1][0];
-                        killerMoves[depth-1][0] = hc;
+                    if (!capMove && killerMoves[depth - 1][0] != hc) {
+                        killerMoves[depth - 1][1] = killerMoves[depth - 1][0];
+                        killerMoves[depth - 1][0] = hc;
                     }
 
                     hashf = 2;
@@ -618,7 +618,6 @@ public class Minimax {
 
         pawnScore = w_doubled - b_doubled + w_blocked - b_blocked + w_isolated - b_isolated;
 
-
         // Control evaluation
         for (int i = 0; i < 64; i++) {
             int wCount = bitCount(board.squareAttackedBy(Square.squareAt(i), Side.WHITE));
@@ -643,12 +642,12 @@ public class Minimax {
                 return pieceValues.get(prom.getPieceType());
 
             int hc = m.hashCode();
-            if (hc == killerMoves[depth-1][0])
+            if (hc == killerMoves[depth - 1][0])
                 return 3;
-            else if (hc == killerMoves[depth-1][1])
+            else if (hc == killerMoves[depth - 1][1])
                 return 2;
             else if (historyMoves.containsKey(hc))
-                    return historyMoves.get(hc);
+                return historyMoves.get(hc);
 
             if (atk == PieceType.KING) {
                 int o = Math.abs(m.getTo().ordinal() - m.getFrom().ordinal());
