@@ -2,6 +2,7 @@ package algorithms;
 
 import chesslib.*;
 import chesslib.game.Game;
+import chesslib.game.GameContext;
 import chesslib.move.*;
 
 import javax.swing.plaf.synth.SynthTextAreaUI;
@@ -66,7 +67,7 @@ public class Minimax {
 
     public static Map<Integer, Integer> historyMoves = new HashMap<>();
 
-    public static Move[][] killerMoves = new Move[MINIMAX_DEPTH][2];
+    public static int[][] killerMoves = new int[MINIMAX_DEPTH][2];
 
     public static double frontierFutility = 100;
     public static double extendedFutility = 500;
@@ -272,9 +273,12 @@ public class Minimax {
         // generate children
         List<Move> moveList = board.legalMoves();
 
+        //GameContext gc = board.getContext();
         // order the list to maximize alpha beta cutoff
         moveList.sort(Comparator.comparingInt((Move m) ->
-                moveValue(m, m.getPromotion(), m.isAdvancing(max ? Side.WHITE : Side.BLACK), board.getPiece(m.getTo()).getPieceType(), board.getPiece(m.getFrom()).getPieceType(), false, depth)).reversed());
+                moveValue(m, m.getPromotion(), m.isAdvancing(max ? Side.WHITE : Side.BLACK),
+                        board.getPiece(m.getTo()).getPieceType(), board.getPiece(m.getFrom()).getPieceType(),
+                        false, depth, m.toString().equals("e8g8"))).reversed());
 
         Move bestMove = moveList.get(0);
 
@@ -284,6 +288,7 @@ public class Minimax {
             for (Move move : moveList) {
 
                 Piece atkPiece = board.getPiece(move.getTo());
+                int hc = move.hashCode();
                 board.doMove(move);
 
                 boolean capMove = !Piece.NONE.equals(atkPiece);
@@ -318,7 +323,6 @@ public class Minimax {
                 if (value > maxEval) {
                     maxEval = value;
                     bestMove = move;
-                    int hc = move.hashCode();
                     if (historyMoves.containsKey(hc)) {
                         historyMoves.put(hc, historyMoves.get(hc)+1);
                     } else
@@ -331,9 +335,9 @@ public class Minimax {
 
                 if (beta <= alpha) {
                     // store a non capturing killer move that is different as the one stored
-                    if (!capMove && killerMoves[depth-1][0] != move) {
+                    if (!capMove && killerMoves[depth-1][0] != hc) {
                         killerMoves[depth-1][1] = killerMoves[depth-1][0];
-                        killerMoves[depth-1][0] = move;
+                        killerMoves[depth-1][0] = hc;
                     }
 
                     hashf = 1;
@@ -352,6 +356,7 @@ public class Minimax {
             for (Move move : moveList) {
 
                 Piece atkPiece = board.getPiece(move.getTo());
+                int hc = move.hashCode();
                 board.doMove(move);
 
                 boolean capMove = !Piece.NONE.equals(atkPiece);
@@ -386,7 +391,6 @@ public class Minimax {
                 if (value < minEval) {
                     minEval = value;
                     bestMove = move;
-                    int hc = move.hashCode();
                     if (historyMoves.containsKey(hc)) {
                         historyMoves.put(hc, historyMoves.get(hc)+1);
                     } else
@@ -399,9 +403,9 @@ public class Minimax {
 
                 if (beta <= alpha) {
                     // store a non capturing killer move that is different as the one stored
-                    if (!capMove && killerMoves[depth-1][0] != move) {
+                    if (!capMove && killerMoves[depth-1][0] != hc) {
                         killerMoves[depth-1][1] = killerMoves[depth-1][0];
-                        killerMoves[depth-1][0] = move;
+                        killerMoves[depth-1][0] = hc;
                     }
 
                     hashf = 2;
@@ -449,8 +453,11 @@ public class Minimax {
         if (capList.isEmpty())
             return stand_pat;
 
+        //GameContext gc = board.getContext();
         capList.sort(Comparator.comparingInt((Move m) ->
-                moveValue(m, m.getPromotion(), m.isAdvancing(max ? Side.WHITE : Side.BLACK), board.getPiece(m.getTo()).getPieceType(), board.getPiece(m.getFrom()).getPieceType(), true, depth)).reversed());
+                moveValue(m, m.getPromotion(), m.isAdvancing(max ? Side.WHITE : Side.BLACK),
+                        board.getPiece(m.getTo()).getPieceType(), board.getPiece(m.getFrom()).getPieceType(),
+                        true, depth,  m.toString().equals("e8g8"))).reversed());
 
         if (max) {
 
@@ -630,29 +637,30 @@ public class Minimax {
     }
 
 
-    public static int moveValue(Move m, Piece prom, boolean advancing, PieceType vic, PieceType atk, boolean isCap, int depth) {
+    public static int moveValue(Move m, Piece prom, boolean advancing, PieceType vic, PieceType atk, boolean isCap, int depth, boolean isCastle) {
 
-        // put in front castles, promos, checks, king moves in the back, moving to square covered by opposite pawn to the back
+        // put in front castles, checks, king moves in the back
 
         if (!isCap && vic == null) {
 
             if (!Piece.NONE.equals(prom))
                 return pieceValues.get(prom.getPieceType());
 
-            if (m == killerMoves[depth-1][0])
+            int hc = m.hashCode();
+            if (hc == killerMoves[depth-1][0])
                 return 3;
-            else if (m == killerMoves[depth-1][1])
+            else if (hc == killerMoves[depth-1][1])
                 return 2;
-            else {
-                int hc = m.hashCode();
-                if (historyMoves.containsKey(hc))
+            else if (historyMoves.containsKey(hc))
                     return historyMoves.get(hc);
-            }
-            // maybe only for pawns
+
+            if (isCastle)
+                return 4;
+            if (atk == PieceType.KING)
+                return -1;
             if (advancing)
                 return 1;
-        }
-        if (vic != null)// MVV/LVA ordering : highest
+        } else if (vic != null)// MVV/LVA ordering : highest
             return vic_atk_val[pieceIndex.get(vic)][pieceIndex.get(atk)];
 
         return 0;

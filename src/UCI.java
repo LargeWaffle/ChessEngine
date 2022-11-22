@@ -169,7 +169,7 @@ public class UCI {
                 System.out.println("Gamephase is " + board.gamePhase);
                 Minimax.cpt = 0;
                 Minimax.cpt2 = 0;
-                Arrays.stream(Minimax.killerMoves).forEach(x -> Arrays.fill(x, null));
+                Arrays.stream(Minimax.killerMoves).forEach(x -> Arrays.fill(x, 0));
                 Minimax.historyMoves.clear();
             }
         }
