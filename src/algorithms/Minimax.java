@@ -5,6 +5,7 @@ import chesslib.game.Game;
 import chesslib.move.*;
 
 import javax.swing.plaf.synth.SynthTextAreaUI;
+import java.lang.reflect.Array;
 import java.util.*;
 
 import static chesslib.Bitboard.bitScanForward;
@@ -61,6 +62,8 @@ public class Minimax {
             PieceType.NONE, 6));
 
     public static Map<Long, HashEntry> transposition = new HashMap<>(transpSize);
+
+    public static Move[][] killerMoves = new Move[MINIMAX_DEPTH][2];
 
     public static double frontierFutility = 100;
     public static double extendedFutility = 500;
@@ -268,7 +271,7 @@ public class Minimax {
 
         // order the list to maximize alpha beta cutoff
         moveList.sort(Comparator.comparingInt((Move m) ->
-                moveValue(m.getPromotion(), m.isAdvancing(max ? Side.WHITE : Side.BLACK), board.getPiece(m.getTo()).getPieceType(), board.getPiece(m.getFrom()).getPieceType(), false)).reversed());
+                moveValue(m, m.getPromotion(), m.isAdvancing(max ? Side.WHITE : Side.BLACK), board.getPiece(m.getTo()).getPieceType(), board.getPiece(m.getFrom()).getPieceType(), false, depth)).reversed());
 
         Move bestMove = moveList.get(0);
 
@@ -277,13 +280,15 @@ public class Minimax {
 
             for (Move move : moveList) {
 
+                Piece atkPiece = board.getPiece(move.getTo());
                 board.doMove(move);
-                PieceType atkPiece = board.getPiece(move.getTo()).getPieceType();
+
+                boolean capMove = !Piece.NONE.equals(atkPiece);
 
                 double fastValue = -evaluate(board, gamePhase, alpha, beta, true) + alpha;
 
                 boolean boardCanPrune = fastValue > (lowerBound + alpha) && Piece.NONE.equals(move.getPromotion())
-                        && !PieceType.KING.equals(atkPiece) && !board.isKingAttacked();
+                        && !board.isKingAttacked();
 
                 if (depth <= 3) {
                     if (depth == 3 && (fastValue >= rasorFutility) && boardCanPrune) {
@@ -302,7 +307,7 @@ public class Minimax {
                     }
                 }
 
-                double value = minimax(board, depth - 1, alpha, beta, false, !PieceType.NONE.equals(atkPiece)).score;
+                double value = minimax(board, depth - 1, alpha, beta, false, capMove).score;
 
                 if (value == higherBound)
                     value += depth;
@@ -317,6 +322,12 @@ public class Minimax {
                 board.undoMove();
 
                 if (beta <= alpha) {
+                    // store a non capturing killer move that is different as the one stored
+                    if (!capMove && killerMoves[depth-1][1] != move) {
+                        killerMoves[depth-1][1] = killerMoves[depth-1][0];
+                        killerMoves[depth-1][0] = move;
+                    }
+
                     hashf = 1;
                     break;
                 }
@@ -331,14 +342,16 @@ public class Minimax {
             double minEval = Double.MAX_VALUE;
 
             for (Move move : moveList) {
+
+                Piece atkPiece = board.getPiece(move.getTo());
                 board.doMove(move);
 
-                PieceType atkPiece = board.getPiece(move.getTo()).getPieceType();
+                boolean capMove = !Piece.NONE.equals(atkPiece);
 
                 double fastValue = evaluate(board, gamePhase, alpha, beta, true) - beta;
 
                 boolean boardCanPrune = fastValue > (lowerBound - beta) && Piece.NONE.equals(move.getPromotion())
-                        && !PieceType.KING.equals(atkPiece) && !board.isKingAttacked();
+                        && !board.isKingAttacked();
 
                 if (depth <= 3) {
                     if (depth == 3 && (fastValue >= rasorFutility) && boardCanPrune) {
@@ -357,7 +370,7 @@ public class Minimax {
                     }
                 }
 
-                double value = minimax(board, depth - 1, alpha, beta, true, !PieceType.NONE.equals(atkPiece)).score;
+                double value = minimax(board, depth - 1, alpha, beta, true, capMove).score;
 
                 if (value == lowerBound)
                     value -= depth;
@@ -372,6 +385,12 @@ public class Minimax {
                 board.undoMove();
 
                 if (beta <= alpha) {
+                    // store a non capturing killer move that is different as the one stored
+                    if (!capMove && killerMoves[depth-1][1] != move) {
+                        killerMoves[depth-1][1] = killerMoves[depth-1][0];
+                        killerMoves[depth-1][0] = move;
+                    }
+
                     hashf = 2;
                     break;
                 }
@@ -418,7 +437,7 @@ public class Minimax {
             return stand_pat;
 
         capList.sort(Comparator.comparingInt((Move m) ->
-                moveValue(m.getPromotion(), m.isAdvancing(max ? Side.WHITE : Side.BLACK), board.getPiece(m.getTo()).getPieceType(), board.getPiece(m.getFrom()).getPieceType(), true)).reversed());
+                moveValue(m, m.getPromotion(), m.isAdvancing(max ? Side.WHITE : Side.BLACK), board.getPiece(m.getTo()).getPieceType(), board.getPiece(m.getFrom()).getPieceType(), true, depth)).reversed());
 
         if (max) {
 
@@ -598,10 +617,14 @@ public class Minimax {
     }
 
 
-    public static int moveValue(Piece prom, boolean advancing, PieceType vic, PieceType atk, boolean isCap) {
+    public static int moveValue(Move m, Piece prom, boolean advancing, PieceType vic, PieceType atk, boolean isCap, int depth) {
 
         if (!isCap && vic == null) {
+
             if (!Piece.NONE.equals(prom))
+                return 40;
+
+            if (m == killerMoves[depth-1][0] || m == killerMoves[depth-1][1])
                 return 2;
 
             // maybe only for pawns
