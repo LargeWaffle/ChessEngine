@@ -273,12 +273,11 @@ public class Minimax {
         // generate children
         List<Move> moveList = board.legalMoves();
 
-        //GameContext gc = board.getContext();
         // order the list to maximize alpha beta cutoff
         moveList.sort(Comparator.comparingInt((Move m) ->
                 moveValue(m, m.getPromotion(), m.isAdvancing(max ? Side.WHITE : Side.BLACK),
                         board.getPiece(m.getTo()).getPieceType(), board.getPiece(m.getFrom()).getPieceType(),
-                        false, depth, m.toString().equals("e8g8"))).reversed());
+                        false, depth)).reversed());
 
         Move bestMove = moveList.get(0);
 
@@ -453,11 +452,11 @@ public class Minimax {
         if (capList.isEmpty())
             return stand_pat;
 
-        //GameContext gc = board.getContext();
+        GameContext gc = board.getContext();
         capList.sort(Comparator.comparingInt((Move m) ->
                 moveValue(m, m.getPromotion(), m.isAdvancing(max ? Side.WHITE : Side.BLACK),
                         board.getPiece(m.getTo()).getPieceType(), board.getPiece(m.getFrom()).getPieceType(),
-                        true, depth,  m.toString().equals("e8g8"))).reversed());
+                        true, depth)).reversed());
 
         if (max) {
 
@@ -636,10 +635,7 @@ public class Minimax {
         return score;
     }
 
-
-    public static int moveValue(Move m, Piece prom, boolean advancing, PieceType vic, PieceType atk, boolean isCap, int depth, boolean isCastle) {
-
-        // put in front castles, checks, king moves in the back
+    public static int moveValue(Move m, Piece prom, boolean advancing, PieceType vic, PieceType atk, boolean isCap, int depth) {
 
         if (!isCap && vic == null) {
 
@@ -654,10 +650,13 @@ public class Minimax {
             else if (historyMoves.containsKey(hc))
                     return historyMoves.get(hc);
 
-            if (isCastle)
-                return 4;
-            if (atk == PieceType.KING)
-                return -1;
+            if (atk == PieceType.KING) {
+                int o = Math.abs(m.getTo().ordinal() - m.getFrom().ordinal());
+                if (o == 2 || o == 3)
+                    return 4;
+                else
+                    return -1;
+            }
             if (advancing)
                 return 1;
         } else if (vic != null)// MVV/LVA ordering : highest
