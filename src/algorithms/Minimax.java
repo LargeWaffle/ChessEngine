@@ -18,6 +18,7 @@ import static java.lang.Long.min;
 
 public class Minimax {
 
+    public static final int MINIMAX_MAX_DEPTH = 7;
     public static final int MINIMAX_DEPTH = 5;
     public static final int QUIESCENCE_DEPTH = 3;
     public static int transpSize = 100000;
@@ -67,7 +68,7 @@ public class Minimax {
 
     public static Map<Integer, Integer> historyMoves = new HashMap<>();
 
-    public static int[][] killerMoves = new int[MINIMAX_DEPTH][2];
+    public static int[][] killerMoves = new int[MINIMAX_MAX_DEPTH][2];
 
     public static double frontierFutility = 100;
     public static double extendedFutility = 500;

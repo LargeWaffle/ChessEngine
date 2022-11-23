@@ -1,9 +1,6 @@
 import algorithms.Minimax;
 import algorithms.Node;
-import chesslib.Board;
-import chesslib.Piece;
-import chesslib.Side;
-import chesslib.Square;
+import chesslib.*;
 import chesslib.move.*;
 
 import algorithms.StartTree;
@@ -143,8 +140,15 @@ public class UCI {
                     if (st.tree_move == null) { // GERE LE CAS OU L'AUTRE DONNE PIECE
                         board.updateGamePhase(1);
                         inputGo();
-                    } else
+                    } else if (board.legalMoves().contains(st.tree_move)) {
                         System.out.println("bestmove " + st.tree_move);
+                    } else {
+                        int m_count = 0;
+                        while (board.getPiece(board.legalMoves().get(m_count).getFrom()).getPieceType() != PieceType.PAWN)
+                            m_count++;
+                        System.out.println("bestmove " + board.legalMoves().get(m_count));
+                    }
+
 
                     if (st.phase1)
                         board.updateGamePhase(1);
@@ -152,7 +156,12 @@ public class UCI {
             } else {
                 boolean isMax = board.getSideToMove() == Side.WHITE;
                 long start = System.currentTimeMillis();
-                Node bestNode = Minimax.minimax(board, Minimax.MINIMAX_DEPTH, -Double.MAX_VALUE, Double.MAX_VALUE, isMax, false);
+                Node bestNode;
+                /*if (board.gamePhase == 2 && pieceCount)
+                    bestNode = Minimax.minimax(board, Minimax.MINIMAX_MAX_DEPTH, -Double.MAX_VALUE, Double.MAX_VALUE, isMax, false);
+                else*/
+                    bestNode = Minimax.minimax(board, Minimax.MINIMAX_DEPTH, -Double.MAX_VALUE, Double.MAX_VALUE, isMax, false);
+
                 System.out.println(System.currentTimeMillis() - start);
                 System.out.println("Nodes explored " + Minimax.cpt);
                 System.out.println("Q nodes explored " + Minimax.cpt2);
