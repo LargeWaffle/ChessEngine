@@ -587,19 +587,24 @@ public class StartTree {
 
     public static void search(treeNode node, List<String> movelist) {
         tree_move = null;
-        String mv = movelist.get(0);
-        List<String> new_mlist = movelist.subList(1, movelist.size());
-        if (node.children == null)
-            phase1 = true;
+        if (node == tree && movelist.size() == 1 && Objects.equals(movelist.get(0), ""))
+            tree_move = node.children.get((int) Math.floor(Math.random()*(node.children.size()))).move;
         else {
-            for (treeNode child : node.children) {
-                if (Objects.equals(mv, child.move)) {
-                    if (new_mlist.size() == 0) {
-                        tree_move = child.children.get(0).move;
-                        if (child.children.get(0).children == null)
-                            phase1 = true;
-                    } else
-                        search(child, new_mlist);
+            String mv = movelist.get(0);
+            List<String> new_mlist = movelist.subList(1, movelist.size());
+            if (node.children == null)
+                phase1 = true;
+            else {
+                for (treeNode child : node.children) {
+                    if (Objects.equals(mv, child.move)) {
+                        if (new_mlist.size() == 0) {
+                            tree_move = child.children.get(0).move;
+                            if (child.children.get(0).children == null)
+                                phase1 = true;
+                            break;
+                        } else
+                            search(child, new_mlist);
+                    }
                 }
             }
         }

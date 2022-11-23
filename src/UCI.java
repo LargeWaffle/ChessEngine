@@ -74,22 +74,21 @@ public class UCI {
 
     public static void inputPosition(String input) {
         String fen = "";
-        input = input.substring(9).concat(" ");
+        input = input.substring(9).concat(" "); // get rid of "position "
 
         if (input.contains("startpos ")) {
-            input = input.substring(9);
+            input = input.substring(9); // get rid of "startpos "
             board.loadFromFen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
 
         } else if (input.contains("fen")) {
-            input = input.substring(4);
+            input = input.substring(4); // get rid of "fen "
             fen = input;
             board.loadFromFen(input);
             fromFen = true;
         }
 
         if (input.contains("moves")) {
-
-            input = input.substring(input.indexOf("moves") + 6);
+            input = input.substring(input.indexOf("moves") + 6); // get rid of "moves"
             moves = input;
             MoveList list;
             if (fromFen)
@@ -105,69 +104,50 @@ public class UCI {
 
         public static void inputGo () {
 
-            if (board.gamePhase != 1 && board.getMoveCounter() == 6) { // transition to middle phase
-                board.updateGamePhase(1);
-            }
-
             if (fromFen)
                 board.updateGamePhase(1);
 
-            if (board.isSetEndPhase()) { // transition to end phase
-                board.updateGamePhase(2);
-            }
-
+            if (board.getMoveCounter() > 20)
+                if (board.isSetEndPhase()) // transition to end phase
+                    board.updateGamePhase(2);
 
             if (board.gamePhase == 0) {
-                if (board.getSideToMove() == Side.WHITE) {
-                    if (board.getMoveCounter() != 2) {
-                        System.out.println("bestmove " + whiteOpen[board.getMoveCounter() - 1]);
-                    } else {
-                        boolean hasPiece = false;
-                        for (Square sq : new Square[]{Square.E5, Square.G5}) {
-                            if (board.getPiece(sq) != Piece.NONE)
-                                hasPiece = true;
-                        }
-                        if (!hasPiece) {
-                            System.out.println("bestmove " + whiteOpen[board.getMoveCounter() - 1]);
-                        } else { // GERE LE CAS OU L'AUTRE DONNE PIECE
-                            board.updateGamePhase(1);
-                            inputGo();
-                        }
-                    }
+                List<String> mlist = List.of(moves.split(" "));
+                st.search(StartTree.tree, mlist);
+                if (st.tree_move == null) {
+                    board.updateGamePhase(1);
+                    inputGo();
+                } else if (board.legalMoves().toString().contains(st.tree_move)) {
+                    System.out.println("bestmove " + st.tree_move);
                 } else {
-                    List<String> mlist = List.of(moves.split(" "));
-                    st.search(StartTree.tree, mlist);
-                    if (st.tree_move == null) { // GERE LE CAS OU L'AUTRE DONNE PIECE
-                        board.updateGamePhase(1);
-                        inputGo();
-                    } else if (board.legalMoves().contains(st.tree_move)) {
-                        System.out.println("bestmove " + st.tree_move);
-                    } else {
-                        int m_count = 0;
-                        while (board.getPiece(board.legalMoves().get(m_count).getFrom()).getPieceType() != PieceType.PAWN)
-                            m_count++;
-                        System.out.println("bestmove " + board.legalMoves().get(m_count));
-                    }
-
-
-                    if (st.phase1)
-                        board.updateGamePhase(1);
+                    int m_count = 0;
+                    while (board.getPiece(board.legalMoves().get(m_count).getFrom()).getPieceType() != PieceType.PAWN)
+                        m_count++;
+                    System.out.println("bestmove " + board.legalMoves().get(m_count));
                 }
+
+                if (st.phase1) // try to anticipate the exit of start tree
+                    board.updateGamePhase(1);
+
             } else {
                 boolean isMax = board.getSideToMove() == Side.WHITE;
                 long start = System.currentTimeMillis();
                 Node bestNode;
-                /*if (board.gamePhase == 2 && pieceCount)
+                if (board.gamePhase == 2)
                     bestNode = Minimax.minimax(board, Minimax.MINIMAX_MAX_DEPTH, -Double.MAX_VALUE, Double.MAX_VALUE, isMax, false);
-                else*/
+                else
                     bestNode = Minimax.minimax(board, Minimax.MINIMAX_DEPTH, -Double.MAX_VALUE, Double.MAX_VALUE, isMax, false);
 
                 System.out.println(System.currentTimeMillis() - start);
                 System.out.println("Nodes explored " + Minimax.cpt);
                 System.out.println("Q nodes explored " + Minimax.cpt2);
                 System.out.println("bestscore " + bestNode.score);
-                if (bestNode.move == null)
-                    System.out.println("bestmove " + board.legalMoves().get(0));
+                if (bestNode.move == null) {
+                    int m_count = 0;
+                    while (board.getPiece(board.legalMoves().get(m_count).getFrom()).getPieceType() != PieceType.PAWN)
+                        m_count++;
+                    System.out.println("bestmove " + board.legalMoves().get(m_count));
+                }
                 else
                     System.out.println("bestmove " + bestNode.move);
                 totalNodes += Minimax.cpt;
