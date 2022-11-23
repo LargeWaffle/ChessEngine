@@ -131,7 +131,7 @@ public class UCI {
                 boolean isMax = board.getSideToMove() == Side.WHITE;
                 long start = System.currentTimeMillis();
                 Node bestNode;
-                //if (board.gamePhase == 2)
+                //if (board.gamePhase == 2) // 7 too heavy for start of endgame
                   //  bestNode = Minimax.minimax(board, Minimax.MINIMAX_MAX_DEPTH, -Double.MAX_VALUE, Double.MAX_VALUE, isMax, false, true);
                 //else
                     bestNode = Minimax.minimax(board, Minimax.MINIMAX_DEPTH, -Double.MAX_VALUE, Double.MAX_VALUE, isMax, false, true);

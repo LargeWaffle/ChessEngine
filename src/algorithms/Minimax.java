@@ -257,7 +257,7 @@ public class Minimax {
             return node;
         }
 
-        // this kinda works ... but not with quiescence (add allowNull in minimax)
+        // this kinda works ... but not with quiescence ... or does it
       if (gamePhase != 2 && allowNull && depth >= 3 && !board.isKingAttacked()) { // put here all conditions to check if its ok to nullmove
 
             double eval = evaluate(board, gamePhase, alpha, beta, true);
@@ -280,7 +280,7 @@ public class Minimax {
                         board.getPiece(m.getTo()).getPieceType(), board.getPiece(m.getFrom()).getPieceType(),
                         false, depth)).reversed());
 
-        Move bestMove = moveList.get(0);
+        Move bestMove = null;
 
         if (max) {
             double maxEval = -Double.MAX_VALUE;
@@ -289,9 +289,9 @@ public class Minimax {
 
                 Piece atkPiece = board.getPiece(move.getTo());
                 int hc = move.hashCode();
-                board.doMove(move);
-
                 boolean capMove = !Piece.NONE.equals(atkPiece);
+
+                board.doMove(move);
 
                 double fastValue = -evaluate(board, gamePhase, alpha, beta, true) + alpha;
 
@@ -453,7 +453,6 @@ public class Minimax {
         if (capList.isEmpty())
             return stand_pat;
 
-        GameContext gc = board.getContext();
         capList.sort(Comparator.comparingInt((Move m) ->
                 moveValue(m, m.getPromotion(), m.isAdvancing(max ? Side.WHITE : Side.BLACK),
                         board.getPiece(m.getTo()).getPieceType(), board.getPiece(m.getFrom()).getPieceType(),
