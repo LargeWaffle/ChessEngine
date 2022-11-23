@@ -17,10 +17,8 @@ public class UCI {
     static double totalNodes = 0;
     static double totalQNodes = 0;
 
-    public static String[] whiteOpen = {"g1f3", "c2c4", "g2g3", "f1g2", "e1g1"};
-
     public static String moves = "";
-    static String ENGINENAME = "Tomart1";
+    static String ENGINENAME = "Garry Kasparough loss";
 
     public static StartTree st = new StartTree();
 
@@ -133,10 +131,10 @@ public class UCI {
                 boolean isMax = board.getSideToMove() == Side.WHITE;
                 long start = System.currentTimeMillis();
                 Node bestNode;
-                if (board.gamePhase == 2)
-                    bestNode = Minimax.minimax(board, Minimax.MINIMAX_MAX_DEPTH, -Double.MAX_VALUE, Double.MAX_VALUE, isMax, false);
-                else
-                    bestNode = Minimax.minimax(board, Minimax.MINIMAX_DEPTH, -Double.MAX_VALUE, Double.MAX_VALUE, isMax, false);
+                //if (board.gamePhase == 2)
+                  //  bestNode = Minimax.minimax(board, Minimax.MINIMAX_MAX_DEPTH, -Double.MAX_VALUE, Double.MAX_VALUE, isMax, false, true);
+                //else
+                    bestNode = Minimax.minimax(board, Minimax.MINIMAX_DEPTH, -Double.MAX_VALUE, Double.MAX_VALUE, isMax, false, true);
 
                 System.out.println(System.currentTimeMillis() - start);
                 System.out.println("Nodes explored " + Minimax.cpt);

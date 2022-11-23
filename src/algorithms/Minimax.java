@@ -25,11 +25,11 @@ public class Minimax {
 
     public static int toc = 0;
 
-    public static String theFEN = "3r4/P5n1/3p1PPk/4p3/P7/RPK3PN/3N3P/8 w - - 0 1";
-    public static String repFEN = "b7/b3k3/7R/3n4/4B1n1/3N3N/4K3/8 w - - 0 1";
-    public static String endFEN = "5k2/p2r1p2/1p1bq2p/7Q/2PR3P/6P1/PP3PK1/R7 w - - 1 29 ";
-    public static String promotionFEN = "8/7P/3k4/8/2P1K3/8/1b3PR1/8 w - - 2 69";
-    public static String killerFEN = "4r1k1/p4p1p/1p3qpB/3b4/1P1R4/P1Q5/5PPP/6K1 w - - 0 1";
+    public static String theFEN = "3r4/P5n1/3p1PPk/4p3/P7/RPK3PN/3N3P/8 w - - 0 1"; // allowNull : Kb2
+    public static String repFEN = "b7/b3k3/7R/3n4/4B1n1/3N3N/4K3/8 w - - 0 1"; // allowNull : Rh7+
+    public static String endFEN = "5k2/p2r1p2/1p1bq2p/7Q/2PR3P/6P1/PP3PK1/R7 w - - 1 29"; // allowNull : Qd5
+    public static String promotionFEN = "8/7P/3k4/8/2P1K3/8/1b3PR1/8 w - - 2 69"; // allowNull : Rg8 Kc5 Rc8+
+    public static String killerFEN = "4r1k1/p4p1p/1p3qpB/3b4/1P1R4/P1Q5/5PPP/6K1 w - - 0 1"; // allowNull : Re4
 
     public static double lowerBound = -10000.0, higherBound = 10000.0;
 
@@ -214,7 +214,7 @@ public class Minimax {
     public Minimax() {
     }
 
-    public static Node minimax(Board board, int depth, double alpha, double beta, boolean max, boolean isCap) {
+    public static Node minimax(Board board, int depth, double alpha, double beta, boolean max, boolean isCap, boolean allowNull) {
 
         cpt++;
         int gamePhase = board.gamePhase;
@@ -258,18 +258,18 @@ public class Minimax {
         }
 
         // this kinda works ... but not with quiescence (add allowNull in minimax)
-   /*   if (gamePhase != 2 && allowNull && depth >= 3 && !board.isKingAttacked()) { // put here all conditions to check if its ok to nullmove
+      if (gamePhase != 2 && allowNull && depth >= 3 && !board.isKingAttacked()) { // put here all conditions to check if its ok to nullmove
 
-            double eval = evaluate(board, gamePhase);
+            double eval = evaluate(board, gamePhase, alpha, beta, true);
             if (eval >= beta) {
                 board.doNullMove();
-                eval = minimax(board, depth - 2 - 1, -beta, -beta + 1, !max, false).score;
+                eval = minimax(board, depth - 2 - 1, -beta, -beta + 1, !max, false, false).score;
                 board.undoMove();
 
                 if (eval >= beta)
                     return new Node(null, eval);
             }
-        }*/
+        }
 
         // generate children
         List<Move> moveList = board.legalMoves();
@@ -280,7 +280,7 @@ public class Minimax {
                         board.getPiece(m.getTo()).getPieceType(), board.getPiece(m.getFrom()).getPieceType(),
                         false, depth)).reversed());
 
-        Move bestMove = null;
+        Move bestMove = moveList.get(0);
 
         if (max) {
             double maxEval = -Double.MAX_VALUE;
@@ -315,7 +315,7 @@ public class Minimax {
                     }
                 }
 
-                double value = minimax(board, depth - 1, alpha, beta, false, capMove).score;
+                double value = minimax(board, depth - 1, alpha, beta, false, capMove, true).score;
 
                 if (value == higherBound)
                     value += depth;
@@ -383,7 +383,7 @@ public class Minimax {
                     }
                 }
 
-                double value = minimax(board, depth - 1, alpha, beta, true, capMove).score;
+                double value = minimax(board, depth - 1, alpha, beta, true, capMove, true).score;
 
                 if (value == lowerBound)
                     value -= depth;
