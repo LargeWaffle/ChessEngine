@@ -102,18 +102,18 @@ public class UCI {
 
         public static void inputGo () {
 
-            if (fromFen)
+            if (fromFen && board.gamePhase < 2)
                 board.updateGamePhase(1);
 
-            if (board.gamePhase == 0) {
+            if (board.gamePhase == 0) { // fetch opening moves from our start tree
                 List<String> mlist = List.of(moves.split(" "));
                 st.search(StartTree.tree, mlist);
-                if (st.tree_move == null) {
+                if (st.tree_move == null) { // if we don't have a move to answer launch minimax
                     board.updateGamePhase(1);
                     inputGo();
-                } else if (board.legalMoves().toString().contains(st.tree_move)) {
+                } else if (board.legalMoves().toString().contains(st.tree_move)) { // play the opening move
                     System.out.println("bestmove " + st.tree_move);
-                } else {
+                } else { // play a pawn move
                     int m_count = 0;
                     while (board.getPiece(board.legalMoves().get(m_count).getFrom()).getPieceType() != PieceType.PAWN)
                         m_count++;
@@ -126,24 +126,33 @@ public class UCI {
             } else {
                 boolean isMax = board.getSideToMove() == Side.WHITE;
                 Node bestNode;
+                // if there is only a king left on one side launch further depth
                 if (board.gamePhase == 3)
-                    bestNode = Minimax.minimax(board, Minimax.MINIMAX_MAX_DEPTH, -Double.MAX_VALUE, Double.MAX_VALUE, isMax, false, true);
-                else
+                    if (board.countPieces() == 5) // if there are 5 or less pieces left search depth 9
+                        bestNode = Minimax.minimax(board, Minimax.MINIMAX_MAX_DEPTH, -Double.MAX_VALUE, Double.MAX_VALUE, isMax, false, true);
+                    else // if not search depth 7
+                        bestNode = Minimax.minimax(board, 7, -Double.MAX_VALUE, Double.MAX_VALUE, isMax, false, true);
+
+                else // if not launch a normal minimax
                     bestNode = Minimax.minimax(board, Minimax.MINIMAX_DEPTH, -Double.MAX_VALUE, Double.MAX_VALUE, isMax, false, true);
 
-                if (bestNode.move == null)
+                if (bestNode.move == null) // if move is incorrect play the first legal one
                     System.out.println("bestmove " + board.legalMoves().get(0));
                 else
                     System.out.println("bestmove " + bestNode.move);
-                Minimax.cpt = 0;
+
+                Minimax.cpt = 0; // reset node counter, killer moves and history moves
                 Arrays.stream(Minimax.killerMoves).forEach(x -> Arrays.fill(x, 0));
                 Minimax.historyMoves.clear();
 
+                // reset values for quiescence and futility
                 Minimax.QUIESCENCE_DEPTH = 3;
                 Minimax.frontierFutility = 100;
                 Minimax.extendedFutility = 500;
                 Minimax.rasorFutility = 900;
                 board.doMove(bestNode.move);
+
+                // check if we switch game phase
                 if (board.gamePhase == 2 && (board.isKingSolo(Side.WHITE) || board.isKingSolo(Side.BLACK)))
                     board.gamePhase = 3;
 

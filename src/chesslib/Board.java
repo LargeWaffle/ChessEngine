@@ -152,6 +152,16 @@ public class Board implements Cloneable, BoardEvent {
         return true;
     }
 
+    public int countPieces () {
+        long bboard = getBitboard();
+        int nbPieces = 0;
+        for (int i = 0; i < 64; i++) {
+            if (((1L << i) & bboard) != 0L)
+                nbPieces++;
+        }
+        return nbPieces;
+    }
+
     public void updateGamePhase(int phase) {
         gamePhase = phase;
     }

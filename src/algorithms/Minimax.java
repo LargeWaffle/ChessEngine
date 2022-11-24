@@ -2,25 +2,31 @@ package algorithms;
 
 import chesslib.*;
 import chesslib.move.*;
+
 import java.util.*;
+
 import static chesslib.Bitboard.bitScanForward;
 import static chesslib.Bitboard.extractLsb;
 import static java.lang.Long.bitCount;
 
 public class Minimax {
 
-    public static int MINIMAX_MAX_DEPTH = 7;
+    // minimax depth for the very late game
+    public static int MINIMAX_MAX_DEPTH = 9;
+
+    // minimax depth throughout the game
     public static int MINIMAX_DEPTH = 5;
+
+    // quiescence search depth
     public static int QUIESCENCE_DEPTH = 3;
+
+    // maximum size of the transposition table
     public static int transpSize = 100000;
 
-
+    // mate evaluation values
     public static double lowerBound = -10000.0, higherBound = 10000.0;
 
-    public static Map<Character, Integer> values = new HashMap<>(Map.of(
-            'Q', 9, 'R', 5, 'N', 3, 'B', 3, 'P', 1,
-            'q', -9, 'r', -5, 'n', -3, 'b', -3, 'p', -1));
-
+    // MVV/LVA table
     public static int[][] vic_atk_val = {
             {60, 61, 62, 63, 64, 65, 0}, // victim K, attacker K, Q, R, B, N, P, None
             {50, 51, 52, 53, 54, 55, 0}, // victim Q, attacker K, Q, R, B, N, P, None
@@ -30,6 +36,8 @@ public class Minimax {
             {10, 11, 12, 13, 14, 15, 0}, // victim P, attacker K, Q, R, B, N, P, None
             {0, 0, 0, 0, 0, 0, 0},      // no victim
     };
+
+    // values of pieces in our engine
     public static Map<PieceType, Integer> pieceValues = new HashMap<>(Map.of(
             PieceType.KING, 20000,
             PieceType.QUEEN, 900,
@@ -48,16 +56,24 @@ public class Minimax {
             PieceType.PAWN, 5,
             PieceType.NONE, 6));
 
+    // transposition table
     public static Map<Long, HashEntry> transposition = new HashMap<>(transpSize);
 
+    // history moves table
     public static Map<Integer, Integer> historyMoves = new HashMap<>();
 
+    // killer moves table
     public static int[][] killerMoves = new int[MINIMAX_MAX_DEPTH][2];
 
+    // margins for futility pruning
     public static double frontierFutility = 100;
     public static double extendedFutility = 500;
     public static double rasorFutility = 900;
+
+    // explored node counter
     public static double cpt = 0;
+
+    // Piece Square Tables
     public static List<Integer> pawnMiddleTable = Arrays.asList(
             0, 0, 0, 0, 0, 0, 0, 0,
             0, 0, 0, 0, 0, 0, 0, 0,
@@ -179,15 +195,16 @@ public class Minimax {
             -50, -30, -30, -30, -30, -30, -30, -50);
 
     public static List<Integer> kingSoloTable = Arrays.asList(
-            -1000, -50, -50, -50, -50, -50, -50, -1000,
+            -100, -50, -50, -50, -50, -50, -50, -100,
             -50, -25, 0, 0, 0, 0, -25, -50,
             -50, 0, 5, 5, 5, 5, 0, -50,
             -50, 0, 5, 5, 5, 5, 0, -50,
             -50, 0, 5, 5, 5, 5, 0, -50,
             -50, 5, 5, 5, 5, 5, 0, -50,
             -50, -25, 5, 0, 0, 0, -25, -50,
-            -1000, -50, -50, -50, -50, -50, -50, -1000);
+            -100, -50, -50, -50, -50, -50, -50, -100);
 
+    // link the PST to the according pieces in midgame
     public static Map<PieceType, List<Integer>> midgamePST = new HashMap<>(Map.of(
             PieceType.PAWN, pawnMiddleTable,
             PieceType.KNIGHT, knightMiddleTable,
@@ -196,6 +213,7 @@ public class Minimax {
             PieceType.QUEEN, queenMiddleTable,
             PieceType.KING, kingMiddleTable));
 
+    // link the PST to the according pieces in endgame
     public static Map<PieceType, List<Integer>> endgamePST = new HashMap<>(Map.of(
             PieceType.PAWN, pawnEndingTable,
             PieceType.KNIGHT, knightEndingTable,
@@ -204,6 +222,7 @@ public class Minimax {
             PieceType.QUEEN, queenEndingTable,
             PieceType.KING, kingEndingTable));
 
+    // link the PST to the according pieces when there is only a king left
     public static Map<PieceType, List<Integer>> soloKingPST = new HashMap<>(Map.of(
             PieceType.PAWN, pawnEndingTable,
             PieceType.KNIGHT, knightEndingTable,
@@ -212,12 +231,13 @@ public class Minimax {
             PieceType.QUEEN, queenEndingTable,
             PieceType.KING, kingSoloTable));
 
-    public Minimax() {
-    }
+    public Minimax() {}
 
+    // minimax alpha beta search
     public static Node minimax(Board board, int depth, double alpha, double beta, boolean max, boolean isCap, boolean allowNull) {
 
         cpt++;
+        // if we have explored 400 000 nodes prune more aggressively
         if (cpt == 400000) {
             QUIESCENCE_DEPTH = 2;
             frontierFutility = 50;
@@ -225,6 +245,7 @@ public class Minimax {
             rasorFutility = 600;
         }
 
+        // if we have explored 800 000 nodes stop the search
         if (cpt > 800000) {
             depth = 0;
             QUIESCENCE_DEPTH = 0;
@@ -232,6 +253,7 @@ public class Minimax {
 
         int gamePhase = board.gamePhase;
 
+        // if there is a solitary king set next game phase
         if (gamePhase == 2 && (board.isKingSolo(Side.WHITE) || board.isKingSolo(Side.BLACK)))
             gamePhase = 3;
 
@@ -245,6 +267,7 @@ public class Minimax {
         long zKey = board.getIncrementalHashKey(); // or zobrist but this seems faster
         int hashf = 0;
 
+        // retrieve position info from transposition table if existing
         if (gamePhase != 3 && transposition.containsKey(zKey % transpSize)) {
             HashEntry rec = transposition.get(zKey % transpSize);
             if (rec.zobrist == zKey) {
@@ -259,6 +282,7 @@ public class Minimax {
             }
         }
 
+        //  evaluate leaf nodes
         if (depth <= 0) {
             Node node;
             if (isCap && gamePhase != 3) // if last move was capturing launch a quiescence search to stabilize
@@ -270,8 +294,8 @@ public class Minimax {
             return node;
         }
 
-        // this kinda works ... but not with quiescence ... or does it
-      if (gamePhase < 2 && allowNull && depth >= 3 && !board.isKingAttacked()) { // put here all conditions to check if its ok to nullmove
+        // null move pruning
+        if (gamePhase < 2 && allowNull && depth >= 3 && !board.isKingAttacked()) {
 
             double eval = evaluate(board, gamePhase, alpha, beta, true);
             if (eval >= beta) {
@@ -303,15 +327,19 @@ public class Minimax {
 
                 Piece atkPiece = board.getPiece(move.getTo());
                 int hc = move.hashCode();
+
+                // defines if the move is capturing
                 boolean capMove = !Piece.NONE.equals(atkPiece);
 
                 board.doMove(move);
 
+                // get a estimation of the value to perform futility pruning at depth <= 3
                 double fastValue = -evaluate(board, gamePhase, alpha, beta, true) + alpha;
 
                 boolean boardCanPrune = fastValue > (lowerBound + alpha) && Piece.NONE.equals(move.getPromotion())
                         && !board.isKingAttacked();
 
+                // futility pruning
                 if (depth <= 3 && boardCanPrune && gamePhase < 2) {
                     if (depth == 3 && (fastValue >= rasorFutility)) {
                         board.undoMove();
@@ -331,12 +359,15 @@ public class Minimax {
 
                 double value = minimax(board, depth - 1, alpha, beta, false, capMove, true).score;
 
+                // gives more importance to mates that are seen early in the search --> less moves required to mate
                 if (value == higherBound)
                     value += depth;
 
                 if (value > maxEval) {
                     maxEval = value;
                     bestMove = move;
+
+                    // history move heuristic keeps a counter of the moves that were best moves
                     if (historyMoves.containsKey(hc)) {
                         historyMoves.put(hc, historyMoves.get(hc) + 1);
                     } else
@@ -348,12 +379,13 @@ public class Minimax {
                 board.undoMove();
 
                 if (beta <= alpha) {
-                    // store a non capturing killer move that is different as the one stored
+                    // killer move heuristic - store a non capturing killer move that is different as the one stored
                     if (!capMove && killerMoves[depth - 1][0] != hc) {
                         killerMoves[depth - 1][1] = killerMoves[depth - 1][0];
                         killerMoves[depth - 1][0] = hc;
                     }
 
+                    // set the flag to alpha cutoff for transposition table
                     hashf = 1;
                     break;
                 }
@@ -361,6 +393,8 @@ public class Minimax {
             }
 
             Node node = new Node(bestMove, maxEval);
+
+            // add this position to the transposition table with accurate flag
             transposition.put(zKey % transpSize, new HashEntry(zKey, depth, hashf, node));
             return node;
 
@@ -371,15 +405,19 @@ public class Minimax {
 
                 Piece atkPiece = board.getPiece(move.getTo());
                 int hc = move.hashCode();
-                board.doMove(move);
 
+                // defines if the move is capturing
                 boolean capMove = !Piece.NONE.equals(atkPiece);
 
+                board.doMove(move);
+
+                // get a estimation of the value to perform futility pruning at depth <= 3
                 double fastValue = evaluate(board, gamePhase, alpha, beta, true) - beta;
 
                 boolean boardCanPrune = fastValue > (lowerBound - beta) && Piece.NONE.equals(move.getPromotion())
                         && !board.isKingAttacked();
 
+                // futility pruning
                 if (depth <= 3 && boardCanPrune && gamePhase < 2) {
                     if (depth == 3 && (fastValue >= rasorFutility)) {
                         board.undoMove();
@@ -399,12 +437,15 @@ public class Minimax {
 
                 double value = minimax(board, depth - 1, alpha, beta, true, capMove, true).score;
 
+                // gives more importance to mates that are seen early in the search --> less moves required to mate
                 if (value == lowerBound)
                     value -= depth;
 
                 if (value < minEval) {
                     minEval = value;
                     bestMove = move;
+
+                    // history move heuristic keeps a counter of the moves that were best moves
                     if (historyMoves.containsKey(hc)) {
                         historyMoves.put(hc, historyMoves.get(hc) + 1);
                     } else
@@ -416,12 +457,13 @@ public class Minimax {
                 board.undoMove();
 
                 if (beta <= alpha) {
-                    // store a non capturing killer move that is different as the one stored
+                    // killer move heuristic - store a non capturing killer move that is different as the one stored
                     if (!capMove && killerMoves[depth - 1][0] != hc) {
                         killerMoves[depth - 1][1] = killerMoves[depth - 1][0];
                         killerMoves[depth - 1][0] = hc;
                     }
 
+                    // set the flag to beta cutoff for transposition table
                     hashf = 2;
                     break;
                 }
@@ -429,20 +471,25 @@ public class Minimax {
             }
 
             Node node = new Node(bestMove, minEval);
+
+            // add this position to the transposition table with accurate flag
             transposition.put(zKey % transpSize, new HashEntry(zKey, depth, hashf, node));
             return node;
         }
     }
 
+    // quiescence search to stabilize capture nodes and limit horizon effect
     public static double quiescenceSearch(Board board, double alpha, double beta, int depth, boolean max) {
 
-        double DELTA = 1500; // delta cutoff
+        // delta cutoff value
+        double DELTA = 1500;
 
         if (board.isMated())
             return max ? lowerBound : higherBound;
         else if (board.isDraw())
             return 0;
 
+        // get the evaluation of the board
         double stand_pat = evaluate(board, board.gamePhase, alpha, beta, false);
 
         if (depth <= 0)
@@ -461,11 +508,13 @@ public class Minimax {
             beta = Math.min(stand_pat, beta);
         }
 
+        // generate all possible captures
         List<Move> capList = board.pseudoLegalCaptures();
 
         if (capList.isEmpty())
             return stand_pat;
 
+        // order the moves to maximise cutoff
         capList.sort(Comparator.comparingInt((Move m) ->
                 moveValue(m, m.getPromotion(), m.isAdvancing(max ? Side.WHITE : Side.BLACK),
                         board.getPiece(m.getTo()).getPieceType(), board.getPiece(m.getFrom()).getPieceType(),
@@ -477,9 +526,11 @@ public class Minimax {
 
             for (Move cap : capList) {
 
+                // check if the capture is legal
                 if (!board.isMoveLegal(cap, true))
                     continue;
 
+                // delta pruning
                 if (stand_pat + DELTA < alpha)
                     continue;
 
@@ -537,24 +588,28 @@ public class Minimax {
 
         int matW = 0, contW = 0, pawnW = 0;
 
+        // lazy margin value
         int lazyMargin = 150;
+
         long bboard = board.getBitboard();
 
+        // if there is a side with only a king left, evaluate material with the "soloKingPST" piece square table
         if (phase == 3) {
             for (int i = 0; i < 64; i++) {
                 if (((1L << i) & bboard) != 0L) {
                     Piece p = board.getPiece(Square.squareAt(i));
                     PieceType type = p.getPieceType();
-                    if (p.getPieceSide() == Side.WHITE)
+                    if (p.getPieceSide() == Side.WHITE) {
                         if (board.isKingSolo(Side.WHITE))
                             materialScore += pieceValues.get(type) + soloKingPST.get(type).get(i);
                         else
                             materialScore += pieceValues.get(type) + endgamePST.get(type).get(i);
-                    else
-                    if (board.isKingSolo(Side.BLACK))
-                        materialScore -= pieceValues.get(type) - soloKingPST.get(type).get(i);
-                    else
-                        materialScore -= pieceValues.get(type) - endgamePST.get(type).get(i);
+                    } else {
+                        if (board.isKingSolo(Side.BLACK))
+                            materialScore -= pieceValues.get(type) - soloKingPST.get(type).get(i);
+                        else
+                            materialScore -= pieceValues.get(type) - endgamePST.get(type).get(i);
+                    }
                 }
             }
             return materialScore;
@@ -572,17 +627,19 @@ public class Minimax {
             }
         }
 
+        // if we wanted a lazy evaluation (i.e. an idea of the actual score), return only the material score
         if (lazy)
             return materialScore;
 
+        // if the estimate score is far off beta or alpha, no need to compute it's actual value
         if ((materialScore - lazyMargin > beta) || (materialScore + lazyMargin < alpha))
             return materialScore;
 
-        // BOARD ANALYSIS
-        if (phase == 0) { // opening phase
-            matW = 1;
-            contW = 10;
-            pawnW = 2;
+        // set the weights of different evaluations according to the game phase
+        if (phase == 0) { // opening phase - values are not used
+            matW = 0;
+            contW = 0;
+            pawnW = 0;
         } else if (phase == 1) { // middle phase
             matW = 1;
             contW = 10;
@@ -593,7 +650,7 @@ public class Minimax {
             pawnW = 1;
         }
 
-        // Pawn eval
+        // Pawn evaluation - adds malus to doubled, blocked and isolated pawns
         int w_doubled = 0, b_doubled = 0, w_blocked = 0, b_blocked = 0, w_isolated = 0, b_isolated = 0;
         int sq, p_d, p_b, p_i;
         long copyBoard = bboard;
@@ -651,7 +708,7 @@ public class Minimax {
 
         pawnScore = w_doubled - b_doubled + w_blocked - b_blocked + w_isolated - b_isolated;
 
-        // Control evaluation
+        // Control evaluation - checks if a square is controlled (i.e. has more pieces covering it) by a side
         for (int i = 0; i < 64; i++) {
             int wCount = bitCount(board.squareAttackedBy(Square.squareAt(i), Side.WHITE));
             int bCount = bitCount(board.squareAttackedBy(Square.squareAt(i), Side.BLACK));
@@ -661,37 +718,49 @@ public class Minimax {
                 controlScore -= 1;
         }
 
-        // Tapered evaluation
+        // Sort of tapered evaluation with the weights set earlier
         score = matW * materialScore + contW * controlScore - pawnW * pawnScore;
 
         return score;
     }
 
+    // move ordering function
     public static int moveValue(Move m, Piece prom, boolean advancing, PieceType vic, PieceType atk, boolean isCap, int depth) {
 
+        // if the sorting is in minimax (and not quiescence) and there is no piece captured for that move
         if (!isCap && vic == null) {
 
+            // if it is a promotion return the value of the piece promoted
             if (!Piece.NONE.equals(prom))
                 return pieceValues.get(prom.getPieceType());
 
             int hc = m.hashCode();
+            // if it is a killer move return 3
             if (hc == killerMoves[depth - 1][0])
                 return 3;
             else if (hc == killerMoves[depth - 1][1])
                 return 2;
+                // if it is a history move return its value
             else if (historyMoves.containsKey(hc))
                 return historyMoves.get(hc);
 
+            // if the piece moving is the king
             if (atk == PieceType.KING) {
                 int o = Math.abs(m.getTo().ordinal() - m.getFrom().ordinal());
+                // if it is to castle put that forward
                 if (o == 2 || o == 3)
                     return 4;
+                // if not send it at the back
                 else
                     return -1;
             }
+
+            // if the move is advancing (i.e. going up for white and down for black), return 1
             if (advancing)
                 return 1;
-        } else if (vic != null)// MVV/LVA ordering : highest
+        }
+        // if the move is capturing, retrieve value to return with the MVV/LVA table
+        else if (vic != null)
             return vic_atk_val[pieceIndex.get(vic)][pieceIndex.get(atk)];
 
         return 0;
