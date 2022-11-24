@@ -105,7 +105,6 @@ public class UCI {
             if (fromFen)
                 board.updateGamePhase(1);
 
-
             if (board.gamePhase == 0) {
                 List<String> mlist = List.of(moves.split(" "));
                 st.search(StartTree.tree, mlist);
@@ -127,9 +126,9 @@ public class UCI {
             } else {
                 boolean isMax = board.getSideToMove() == Side.WHITE;
                 Node bestNode;
-                //if (board.gamePhase == 2) // 7 too heavy for start of endgame
-                  //  bestNode = Minimax.minimax(board, Minimax.MINIMAX_MAX_DEPTH, -Double.MAX_VALUE, Double.MAX_VALUE, isMax, false, true);
-                //else
+                if (board.gamePhase == 3)
+                    bestNode = Minimax.minimax(board, Minimax.MINIMAX_MAX_DEPTH, -Double.MAX_VALUE, Double.MAX_VALUE, isMax, false, true);
+                else
                     bestNode = Minimax.minimax(board, Minimax.MINIMAX_DEPTH, -Double.MAX_VALUE, Double.MAX_VALUE, isMax, false, true);
 
                 if (bestNode.move == null)
@@ -139,6 +138,14 @@ public class UCI {
                 Minimax.cpt = 0;
                 Arrays.stream(Minimax.killerMoves).forEach(x -> Arrays.fill(x, 0));
                 Minimax.historyMoves.clear();
+
+                Minimax.QUIESCENCE_DEPTH = 3;
+                Minimax.frontierFutility = 100;
+                Minimax.extendedFutility = 500;
+                Minimax.rasorFutility = 900;
+                board.doMove(bestNode.move);
+                if (board.gamePhase == 2 && (board.isKingSolo(Side.WHITE) || board.isKingSolo(Side.BLACK)))
+                    board.gamePhase = 3;
 
                 if (board.getMoveCounter() > 20)
                     if (board.isSetEndPhase()) // transition to end phase
