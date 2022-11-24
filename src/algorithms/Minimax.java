@@ -1,20 +1,13 @@
 package algorithms;
 
 import chesslib.*;
-import chesslib.game.Game;
-import chesslib.game.GameContext;
 import chesslib.move.*;
 
-import javax.swing.plaf.synth.SynthTextAreaUI;
-import java.lang.reflect.Array;
 import java.util.*;
 
 import static chesslib.Bitboard.bitScanForward;
 import static chesslib.Bitboard.extractLsb;
-import static java.lang.Character.isLowerCase;
-import static java.lang.Character.isUpperCase;
 import static java.lang.Long.bitCount;
-import static java.lang.Long.min;
 
 public class Minimax {
 
@@ -23,13 +16,6 @@ public class Minimax {
     public static final int QUIESCENCE_DEPTH = 3;
     public static int transpSize = 100000;
 
-    public static int toc = 0;
-
-    public static String theFEN = "3r4/P5n1/3p1PPk/4p3/P7/RPK3PN/3N3P/8 w - - 0 1"; // allowNull : Kb2
-    public static String repFEN = "b7/b3k3/7R/3n4/4B1n1/3N3N/4K3/8 w - - 0 1"; // allowNull : Rh7+
-    public static String endFEN = "5k2/p2r1p2/1p1bq2p/7Q/2PR3P/6P1/PP3PK1/R7 w - - 1 29"; // allowNull : Qd5
-    public static String promotionFEN = "8/7P/3k4/8/2P1K3/8/1b3PR1/8 w - - 2 69"; // allowNull : Rg8 Kc5 Rc8+
-    public static String killerFEN = "4r1k1/p4p1p/1p3qpB/3b4/1P1R4/P1Q5/5PPP/6K1 w - - 0 1"; // allowNull : Re4
 
     public static double lowerBound = -10000.0, higherBound = 10000.0;
 
@@ -74,7 +60,6 @@ public class Minimax {
     public static double extendedFutility = 500;
     public static double rasorFutility = 900;
     public static double cpt = 0;
-    public static double cpt2 = 0;
     public static List<Integer> pawnMiddleTable = Arrays.asList(
             0, 0, 0, 0, 0, 0, 0, 0,
             0, 0, 0, 0, 0, 0, 0, 0,
@@ -422,7 +407,6 @@ public class Minimax {
 
     public static double quiescenceSearch(Board board, double alpha, double beta, int depth, boolean max) {
 
-        cpt2++;
         double DELTA = 1500; // delta cutoff
 
         if (board.isMated())
