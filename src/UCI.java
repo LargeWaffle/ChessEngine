@@ -105,10 +105,6 @@ public class UCI {
             if (fromFen)
                 board.updateGamePhase(1);
 
-            //if (board.getMoveCounter() > 20)
-            if (board.isSetEndPhase()) // transition to end phase
-                board.updateGamePhase(2);
-
             if (board.gamePhase == 0) {
                 List<String> mlist = List.of(moves.split(" "));
                 st.search(StartTree.tree, mlist);
@@ -129,31 +125,20 @@ public class UCI {
 
             } else {
                 boolean isMax = board.getSideToMove() == Side.WHITE;
-                long start = System.currentTimeMillis();
                 Node bestNode;
                 if (board.gamePhase == 3)
                     bestNode = Minimax.minimax(board, Minimax.MINIMAX_MAX_DEPTH, -Double.MAX_VALUE, Double.MAX_VALUE, isMax, false, true);
                 else
                     bestNode = Minimax.minimax(board, Minimax.MINIMAX_DEPTH, -Double.MAX_VALUE, Double.MAX_VALUE, isMax, false, true);
 
-                System.out.println(System.currentTimeMillis() - start);
-                System.out.println("Nodes explored " + Minimax.cpt);
-                System.out.println("Q nodes explored " + Minimax.cpt2);
-                System.out.println("bestscore " + bestNode.score);
                 if (bestNode.move == null)
                     System.out.println("bestmove " + board.legalMoves().get(0));
                 else
                     System.out.println("bestmove " + bestNode.move);
-                totalNodes += Minimax.cpt;
-                System.out.println("total nodes explored " + totalNodes);
-                totalQNodes += Minimax.cpt2;
-                System.out.println("total Q nodes explored " + totalQNodes);
-                System.out.println("total toc " + Minimax.toc);
-                System.out.println("Gamephase is " + board.gamePhase);
                 Minimax.cpt = 0;
-                Minimax.cpt2 = 0;
                 Arrays.stream(Minimax.killerMoves).forEach(x -> Arrays.fill(x, 0));
                 Minimax.historyMoves.clear();
+
                 Minimax.QUIESCENCE_DEPTH = 3;
                 Minimax.frontierFutility = 100;
                 Minimax.extendedFutility = 500;
@@ -161,6 +146,10 @@ public class UCI {
                 board.doMove(bestNode.move);
                 if (board.gamePhase == 2 && (board.isKingSolo(Side.WHITE) || board.isKingSolo(Side.BLACK)))
                     board.gamePhase = 3;
+
+                if (board.getMoveCounter() > 20)
+                    if (board.isSetEndPhase()) // transition to end phase
+                        board.updateGamePhase(2);
             }
         }
 
