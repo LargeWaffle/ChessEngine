@@ -131,7 +131,7 @@ public class UCI {
                 boolean isMax = board.getSideToMove() == Side.WHITE;
                 long start = System.currentTimeMillis();
                 Node bestNode;
-                if (board.gamePhase == 2) // 7 too heavy for start of endgame
+                if (board.gamePhase == 3)
                     bestNode = Minimax.minimax(board, Minimax.MINIMAX_MAX_DEPTH, -Double.MAX_VALUE, Double.MAX_VALUE, isMax, false, true);
                 else
                     bestNode = Minimax.minimax(board, Minimax.MINIMAX_DEPTH, -Double.MAX_VALUE, Double.MAX_VALUE, isMax, false, true);
@@ -158,6 +158,9 @@ public class UCI {
                 Minimax.frontierFutility = 100;
                 Minimax.extendedFutility = 500;
                 Minimax.rasorFutility = 900;
+                board.doMove(bestNode.move);
+                if (board.gamePhase == 2 && (board.isKingSolo(Side.WHITE) || board.isKingSolo(Side.BLACK)))
+                    board.gamePhase = 3;
             }
         }
 

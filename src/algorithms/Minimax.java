@@ -186,6 +186,16 @@ public class Minimax {
             -30, -30, 0, 0, 0, 0, -30, -30,
             -50, -30, -30, -30, -30, -30, -30, -50);
 
+    public static List<Integer> kingSoloTable = Arrays.asList(
+            -1000, -50, -50, -50, -50, -50, -50, -1000,
+            -50, -25, 0, 0, 0, 0, -25, -50,
+            -50, 0, 5, 5, 5, 5, 0, -50,
+            -50, 0, 5, 5, 5, 5, 0, -50,
+            -50, 0, 5, 5, 5, 5, 0, -50,
+            -50, 5, 5, 5, 5, 5, 0, -50,
+            -50, -25, 5, 0, 0, 0, -25, -50,
+            -1000, -50, -50, -50, -50, -50, -50, -1000);
+
     public static Map<PieceType, List<Integer>> midgamePST = new HashMap<>(Map.of(
             PieceType.PAWN, pawnMiddleTable,
             PieceType.KNIGHT, knightMiddleTable,
@@ -201,6 +211,14 @@ public class Minimax {
             PieceType.ROOK, rookEndingTable,
             PieceType.QUEEN, queenEndingTable,
             PieceType.KING, kingEndingTable));
+
+    public static Map<PieceType, List<Integer>> soloKingPST = new HashMap<>(Map.of(
+            PieceType.PAWN, pawnEndingTable,
+            PieceType.KNIGHT, knightEndingTable,
+            PieceType.BISHOP, bishopEndingTable,
+            PieceType.ROOK, rookEndingTable,
+            PieceType.QUEEN, queenEndingTable,
+            PieceType.KING, kingSoloTable));
 
     public Minimax() {
     }
@@ -221,6 +239,10 @@ public class Minimax {
         }
 
         int gamePhase = board.gamePhase;
+
+        if (gamePhase == 2 && (board.isKingSolo(Side.WHITE) || board.isKingSolo(Side.BLACK)))
+            gamePhase = 3;
+
         if (board.isMated())
             return new Node(null, max ? lowerBound : higherBound);
         else if (board.isDraw())
@@ -231,7 +253,7 @@ public class Minimax {
         long zKey = board.getIncrementalHashKey(); // or zobrist but this seems faster
         int hashf = 0;
 
-        if (transposition.containsKey(zKey % transpSize)) {
+        if (gamePhase != 3 && transposition.containsKey(zKey % transpSize)) {
             HashEntry rec = transposition.get(zKey % transpSize);
             if (rec.zobrist == zKey) {
                 if (rec.depth >= depth) {
@@ -247,20 +269,17 @@ public class Minimax {
 
         if (depth <= 0) {
             Node node;
-            if (isCap) // if last move was capturing launch a quiescence search to stabilize
+            if (isCap && gamePhase != 3) // if last move was capturing launch a quiescence search to stabilize
                 node = new Node(null, quiescenceSearch(board, alpha, beta, QUIESCENCE_DEPTH, max));
             else
                 node = new Node(null, evaluate(board, gamePhase, alpha, beta, false));
             transposition.put(zKey % transpSize, new HashEntry(zKey, depth, hashf, node));
 
-            /*if (gamePhase == 2 && (max && node.score >= 1500) || (!max && node.score <= -1500)) // not smart, low score variations in endGame
-                depth = 2;
-            else*/
             return node;
         }
 
         // this kinda works ... but not with quiescence ... or does it
-      if (gamePhase != 2 && allowNull && depth >= 3 && !board.isKingAttacked()) { // put here all conditions to check if its ok to nullmove
+      if (gamePhase < 2 && allowNull && depth >= 3 && !board.isKingAttacked()) { // put here all conditions to check if its ok to nullmove
 
             double eval = evaluate(board, gamePhase, alpha, beta, true);
             if (eval >= beta) {
@@ -301,7 +320,7 @@ public class Minimax {
                 boolean boardCanPrune = fastValue > (lowerBound + alpha) && Piece.NONE.equals(move.getPromotion())
                         && !board.isKingAttacked();
 
-                if (depth <= 3 && boardCanPrune) {
+                if (depth <= 3 && boardCanPrune && gamePhase < 2) {
                     if (depth == 3 && (fastValue >= rasorFutility)) {
                         board.undoMove();
                         continue;
@@ -369,7 +388,7 @@ public class Minimax {
                 boolean boardCanPrune = fastValue > (lowerBound - beta) && Piece.NONE.equals(move.getPromotion())
                         && !board.isKingAttacked();
 
-                if (depth <= 3 && boardCanPrune) {
+                if (depth <= 3 && boardCanPrune && gamePhase < 2) {
                     if (depth == 3 && (fastValue >= rasorFutility)) {
                         board.undoMove();
                         continue;
@@ -528,9 +547,29 @@ public class Minimax {
         int matW = 0, contW = 0, pawnW = 0;
 
         int lazyMargin = 150;
+        long bboard = board.getBitboard();
+
+        if (phase == 3) {
+            for (int i = 0; i < 64; i++) {
+                if (((1L << i) & bboard) != 0L) {
+                    Piece p = board.getPiece(Square.squareAt(i));
+                    PieceType type = p.getPieceType();
+                    if (p.getPieceSide() == Side.WHITE)
+                        if (board.isKingSolo(Side.WHITE))
+                            materialScore += pieceValues.get(type) + soloKingPST.get(type).get(i);
+                        else
+                            materialScore += pieceValues.get(type) + endgamePST.get(type).get(i);
+                    else
+                    if (board.isKingSolo(Side.BLACK))
+                        materialScore -= pieceValues.get(type) - soloKingPST.get(type).get(i);
+                    else
+                        materialScore -= pieceValues.get(type) - endgamePST.get(type).get(i);
+                }
+            }
+            return materialScore;
+        }
 
         // Material evaluation
-        long bboard = board.getBitboard();
         for (int i = 0; i < 64; i++) {
             if (((1L << i) & bboard) != 0L) {
                 Piece p = board.getPiece(Square.squareAt(i));

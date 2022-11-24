@@ -120,7 +120,7 @@ public class Board implements Cloneable, BoardEvent {
     }
 
     public boolean isSetEndPhase() {
-        if (gamePhase == 2) // if end phase is already set
+        if (gamePhase >= 2) // if end phase is already set
             return false;
 
         int nbPieces = 0;
@@ -134,6 +134,21 @@ public class Board implements Cloneable, BoardEvent {
             if (nbPieces == 9) // if there are 6 or less major pieces left (not counting kings)
                 return false;
         }
+        return true;
+    }
+
+    public boolean isKingSolo(Side side) {
+        long bboard = getBitboard();
+
+        for (int i = 0; i < 64; i++) {
+            if (((1L << i) & bboard) != 0L) {
+                Piece p = getPiece(Square.squareAt(i));
+                if (p.getPieceSide() == side)
+                    if (p.getPieceType() != PieceType.KING)
+                        return false;
+            }
+        }
+
         return true;
     }
 
