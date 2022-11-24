@@ -105,9 +105,9 @@ public class UCI {
             if (fromFen)
                 board.updateGamePhase(1);
 
-            if (board.getMoveCounter() > 20)
-                if (board.isSetEndPhase()) // transition to end phase
-                    board.updateGamePhase(2);
+            //if (board.getMoveCounter() > 20)
+            if (board.isSetEndPhase()) // transition to end phase
+                board.updateGamePhase(2);
 
             if (board.gamePhase == 0) {
                 List<String> mlist = List.of(moves.split(" "));
@@ -131,9 +131,9 @@ public class UCI {
                 boolean isMax = board.getSideToMove() == Side.WHITE;
                 long start = System.currentTimeMillis();
                 Node bestNode;
-                //if (board.gamePhase == 2) // 7 too heavy for start of endgame
-                  //  bestNode = Minimax.minimax(board, Minimax.MINIMAX_MAX_DEPTH, -Double.MAX_VALUE, Double.MAX_VALUE, isMax, false, true);
-                //else
+                if (board.gamePhase == 2) // 7 too heavy for start of endgame
+                    bestNode = Minimax.minimax(board, Minimax.MINIMAX_MAX_DEPTH, -Double.MAX_VALUE, Double.MAX_VALUE, isMax, false, true);
+                else
                     bestNode = Minimax.minimax(board, Minimax.MINIMAX_DEPTH, -Double.MAX_VALUE, Double.MAX_VALUE, isMax, false, true);
 
                 System.out.println(System.currentTimeMillis() - start);

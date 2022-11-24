@@ -1,26 +1,17 @@
 package algorithms;
 
 import chesslib.*;
-import chesslib.game.Game;
-import chesslib.game.GameContext;
 import chesslib.move.*;
-
-import javax.swing.plaf.synth.SynthTextAreaUI;
-import java.lang.reflect.Array;
 import java.util.*;
-
 import static chesslib.Bitboard.bitScanForward;
 import static chesslib.Bitboard.extractLsb;
-import static java.lang.Character.isLowerCase;
-import static java.lang.Character.isUpperCase;
 import static java.lang.Long.bitCount;
-import static java.lang.Long.min;
 
 public class Minimax {
 
-    public static final int MINIMAX_MAX_DEPTH = 7;
-    public static final int MINIMAX_DEPTH = 5;
-    public static final int QUIESCENCE_DEPTH = 3;
+    public static int MINIMAX_MAX_DEPTH = 7;
+    public static int MINIMAX_DEPTH = 5;
+    public static int QUIESCENCE_DEPTH = 3;
     public static int transpSize = 100000;
 
     public static int toc = 0;
@@ -217,8 +208,19 @@ public class Minimax {
     public static Node minimax(Board board, int depth, double alpha, double beta, boolean max, boolean isCap, boolean allowNull) {
 
         cpt++;
-        int gamePhase = board.gamePhase;
+        if (cpt == 400000) {
+            QUIESCENCE_DEPTH = 2;
+            frontierFutility = 50;
+            extendedFutility = 300;
+            rasorFutility = 600;
+        }
 
+        if (cpt > 800000) {
+            depth = 0;
+            QUIESCENCE_DEPTH = 0;
+        }
+
+        int gamePhase = board.gamePhase;
         if (board.isMated())
             return new Node(null, max ? lowerBound : higherBound);
         else if (board.isDraw())
@@ -275,10 +277,11 @@ public class Minimax {
         List<Move> moveList = board.legalMoves();
 
         // order the list to maximize alpha beta cutoff
+        int finalDepth = depth;
         moveList.sort(Comparator.comparingInt((Move m) ->
                 moveValue(m, m.getPromotion(), m.isAdvancing(max ? Side.WHITE : Side.BLACK),
                         board.getPiece(m.getTo()).getPieceType(), board.getPiece(m.getFrom()).getPieceType(),
-                        false, depth)).reversed());
+                        false, finalDepth)).reversed());
 
         Move bestMove = null;
 
