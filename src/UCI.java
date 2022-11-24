@@ -154,6 +154,10 @@ public class UCI {
                 Minimax.cpt2 = 0;
                 Arrays.stream(Minimax.killerMoves).forEach(x -> Arrays.fill(x, 0));
                 Minimax.historyMoves.clear();
+                Minimax.QUIESCENCE_DEPTH = 3;
+                Minimax.frontierFutility = 100;
+                Minimax.extendedFutility = 500;
+                Minimax.rasorFutility = 900;
             }
         }
 
