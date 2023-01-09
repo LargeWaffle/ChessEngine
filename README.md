@@ -9,16 +9,16 @@ Usable in the Arena GUI
 ## Concepts used
 * Alpha beta pruning
 * Dynamic evaluation function
-** Tapered evaluation
-** Lazy evaluation
+  Tapered evaluation
+  Lazy evaluation
 * Move ordering
-** Most Valuable Victim/Least Valuable Attacker (MVV/LVA)
-** Considering promoting moves
-** Considering castling
-** Killer Heuristic
-** History Moves Heuristic
-** Progress at reaching the other side
-** King moves
+  Most Valuable Victim/Least Valuable Attacker (MVV/LVA)
+  Considering promoting moves
+  Considering castling
+  Killer Heuristic
+  History Moves Heuristic
+  Progress at reaching the other side
+  King moves
 
 * Transposition tables
 * Futility pruning
