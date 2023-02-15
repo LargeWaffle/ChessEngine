@@ -1,5 +1,8 @@
 # Chess Engine project
-Usable in the Arena GUI
+Usable in the Arena GUI. As time was of the essence, this codebase is not clean and has not been optimized with professional methods, but rather with intuition and heavy debugging trials.
+
+We also mainly relied on Ben-Hur Carlos Vieira Langoni Junior's chesslib library (link)[https://github.com/bhlangonijr/chesslib]
+(Thank you for your great work by the way!).
 
 ## Objectives
 * Functionning chess engine capable of making a move under a second
